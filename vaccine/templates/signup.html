@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            background-image: url('{% static "myproject/images/child2.jpg" %}');
+            background-size:cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 400px;
+            padding: 30px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+       
+        input[type="text"],
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #007bff;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            width: 100%;
+            background-color: #007bff;
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .signup-link a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Sign Up</h2>
+        <form id="signup-form" action="" method="post">
+             {% csrf_token %}
+            
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" placeholder="USERNAME" required>
+            <div class="error-message" id="username-error"></div>
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="EMAIL" required>
+            <div class="error-message" id="email-error"></div>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="PASSWORD" required>
+            <div class="error-message" id="password-error"></div>
+              
+            <label for="confirm-password">Confirm Password:</label>
+            <input type="password" id="confirm-password" name="confirm-password" placeholder="CONFIRM PASSWORD" required>
+            <div class="error-message" id="confirm-password-error"></div>
+            
+            <button type="submit" value="signup">Sign Up</button>
+        </form>
+        <div class="signup-link">Already have an account? <a href="{% url 'login' %}">Log in here</a>.</div>
+        {% for message in messages %}
+            <h3 style="color: darkred">{{ message }}</h3>
+        {% endfor %}
+    </div>
+
+    <script>
+        const signupForm = document.getElementById('signup-form');
+        const email = document.getElementById('email');
+        const username = document.getElementById('username');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm-password');
+        const emailError = document.getElementById('email-error');
+        const usernameError = document.getElementById('username-error');
+        const passwordError = document.getElementById('password-error');
+        const confirmPasswordError = document.getElementById('confirm-password-error');
+    
+        function showError(input, errorElement, message) {
+            errorElement.textContent = message;
+        }
+    
+        function clearError(errorElement) {
+            errorElement.textContent = '';
+        }
+    
+        email.addEventListener('input', function () {
+            clearError(emailError);
+            const emailPattern = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,4}$/;
+            if (!emailPattern.test(email.value)) {
+                showError(email, emailError, 'Invalid email format');
+            }
+        });
+    
+        username.addEventListener('input', function () {
+            clearError(usernameError);
+            if (username.value.length < 5) {
+                showError(username, usernameError, 'Username must be at least 5 characters');
+            }
+        });
+    
+        password.addEventListener('input', function () {
+            clearError(passwordError);
+            const passwordPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{8,}$/;
+            if (!passwordPattern.test(password.value)) {
+                showError(password, passwordError, 'Password must contain at least one numeric digit, one uppercase letter, one lowercase letter, and one special character, and be at least 8 characters long');
+            }
+        });
+    
+        confirmPassword.addEventListener('input', function () {
+            clearError(confirmPasswordError);
+            if (password.value !== confirmPassword.value) {
+                showError(confirmPassword, confirmPasswordError, 'Passwords do not match');
+            }
+        });
+    
+        signupForm.addEventListener('submit', function (e) {
+            if (emailError.textContent || usernameError.textContent || passwordError.textContent || confirmPasswordError.textContent) {
+                e.preventDefault();
+            }
+        });
+    </script>
+
+ 
+    
+
+   
+</body>
+</html>

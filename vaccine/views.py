@@ -1,36 +1,46 @@
 from django.shortcuts import render, redirect
-from .models import Usertable
+from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login as auth
+from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
 from datetime import datetime
+from .models import CustomUser
+
+
 # Create your views here.
 def index(request):
     return render(request, "index.html")
 
 def homepage(request):
-    return render(request, "homepage.html")
+    if 'email' in request.session:
+        response = render(request,'homepage.html')
+        response['Cache-Control'] = 'no-store, must-revalidate'
+        return response
+    else:
+        return redirect('login')
 
 def loginn(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
 
-        user= Usertable.objects.get(email=email, password=password) if Usertable.objects.filter(email=email).exists() else None
-
-        if user is not None:
+        try:
+            user = CustomUser.objects.get(email=email, password=password)
             auth(request, user)
-            messages.success(request, "Login successfull")
+            request.session['email'] = email
+            messages.success(request, "Logged in")
             return redirect('homepage')
-        else:
-            messages.info(request, "invalid login")
-            return redirect('login')
-         
-    return render(request, "login.html")
+        except CustomUser.DoesNotExist:
+            messages.info(request, "Invalid login")
+
+    response = render(request, 'login.html')
+    response['Cache-Control'] = 'no-store, must-revalidate'
+    return response
 
 def signup(request):
     if request.method == 'POST':
-        fname = request.POST['fname']
-        lname = request.POST['lname']
+        first_name = request.POST['fname']
+        last_name = request.POST['lname']
         email = request.POST['email']
         phone = request.POST['phone']
         dob_str = request.POST['dob']
@@ -40,16 +50,23 @@ def signup(request):
         
 
         # Validate the inputs
-        if not fname or not lname or not email or not phone or not dob or not role or not password:
+        if not first_name or not last_name or not email or not phone or not dob or not role or not password:
             messages.info(request, "All fields are required")
             return redirect('signup')
-        elif Usertable.objects.filter(email=email).exists():
+        elif CustomUser.objects.filter(email=email).exists():
             messages.info(request, "Email already exists")
             return redirect('signup')
-      
-        user = Usertable( email=email, password=password)
+        username = email
+        user = CustomUser( first_name=first_name, last_name=last_name,email=email,phone=phone,dob=dob, role=role, password=password, username=username)
         user.save()
         messages.success(request, "Registration successful. Please login.")
         return redirect('login')
     
     return render(request, "signup.html")
+
+
+
+def logout(request):
+    auth_logout(request)
+    return render(request, 'login.html')
+

@@ -1,104 +1,431 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>User Profiles</title>
+    <title>User Accounts</title>
     <style>
+        /* Top-level CSS for table formatting */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background-color:rgb(0, 113, 128) ;
             margin: 0;
             padding: 0;
+            font-family: Arial, sans-serif;
         }
 
-        h1 {
+        .dashboard-heading {
+            font-size: 24px;
+            background-color: #2a208e;
+            font-weight: bold;
+            padding: 10px;
             text-align: center;
-            background-color: #007bff;
+        }
+
+        /* CSS for Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: magenta;
             color: #fff;
+            position: fixed;
+            height: 100%;
+            overflow: auto;
+        }
+
+        .sidebar a {
+            padding: 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #fff;
+            display: block;
+        }
+
+        .sidebar a:hover {
+            background-color: #555;
+        }
+
+        /* CSS for Content Area */
+        .content {
+            margin-left: 250px;
             padding: 20px;
         }
 
-        table {
-            width: 80%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        /* CSS for Header */
+        .header {
+            background-color:rgb(94, 188, 163);
+            color: #fff;
+            padding: 20px;
+            text-align: center;
         }
 
-        th, td {
+        h1 {
+            color: #333;
+        }
+
+        /* CSS for the filter form */
+        form {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        form label {
+            margin-right: 10px;
+        }
+
+        /* CSS for the filter button */
+        .filter-button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+         /* Style for the submenu */
+         .submenu {
+            /* Initially hide the submenu */
+           list-style: none;
+           padding-left: 0;
+        }
+
+        .submenu li {
+            margin: 5px 0;
+        }
+
+        /* CSS for the user table */
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .user-table th,
+        .user-table td {
             border: 1px solid #ccc;
-            padding: 15px;
+            padding: 10px;
             text-align: left;
         }
 
-        th {
-            background-color: #007bff;
+        .user-table th {
+            background-color: #007BFF;
             color: #fff;
         }
 
-        tr:nth-child(even) {
+        .user-table tbody tr:nth-child(even) {
             background-color: #f2f2f2;
         }
 
-        tr:hover {
+        .user-table tbody tr:hover {
             background-color: #ddd;
         }
 
-        .navbar {
-            overflow: hidden;
-            background-color: #007bff;
+        /* Styling for the filter dropdown */
+        select {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .large-message-box {
+            display: none;
             position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            z-index: 9999;
         }
-
-        .navbar a {
-            float: right;
-            color: white;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
+        
+        /* CSS for Message Box Content */
+        .message-content {
             font-size: 18px;
+            text-align: center;
         }
-
-        .navbar a:hover {
-            background-color: #0056b3;
+        
+        /* CSS for Close Button */
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #333;
         }
     </style>
 </head>
-<body>
-    <div class="navbar">
-        <a href="{% url 'signup' %}">Registration</a>
-        <a href="{% url 'logout' %}">Logout</a>
+{% if messages %}
+    <div class="large-message-box">
+        <span class="close-button" onclick="closeMessageBox()">&times;</span>
+        <div class="message-content">
+            {% for message in messages %}
+                {{ message|safe }}<br>
+            {% endfor %}
+        </div>
     </div>
+    {% endif %}
+    <div class="sidebar">
+        <div class="dashboard-heading">Dashboard</div>
+        <a href="#Patients" class="nav-link" id="Patients-link">Patients</a>
+        <a href="#doctor" class="nav-link" id="doctor-link">Doctors</a>
+        <a href="#add-doctor" class="nav-link" id="adddoctor-link">Add Doctor</a>
+        <a href="#approved-doctors" class="nav-link" id="approved-doctor-link">Approved Doctors</a>
+        <ul class="submenu">
+            <li><a href="{% url 'doctor_list' %}">View Doctors</a></li>
+        </ul>
+        <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+    </div>
+    <div class="content">
+        <!-- Header -->
+        <div class="header">
+            <h1>Welcome to the Admin Dashboard</h1>
+        </div>
+        <h1>User Accounts</h1>
 
-    <h1>User Profiles</h1>
+
+        
+        <!-- Table for patients-->
+       
+
+        <div id="Patients-table" class="user-table">
+            <h2>Patients</h2>
+            <!-- Add the table for patients here -->
+            <form method="post">
+                {% csrf_token %} 
+                <table>
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>DOB</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_profile in user_profiles %}
+                            {% if not user_profile.is_superuser %} {# Check if the user is not a superuser #}
+                                <tr>
+                                    <td>{{ user_profile.first_name }}</td>
+                                    <td>{{ user_profile.last_name }}</td>
+                                    <td>{{ user_profile.email }}</td>
+                                    <td>{{ user_profile.dob }}</td>
+                                    <td>{{ user_profile.phone }}</td>
+                                    <td>{{ user_profile.role }}</td>
+                                    <td>
+                                        {% if user_profile.is_active %}
+                                            <form method="post" action="{% url 'deactivate_user' user_profile.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit">Deactivate</button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{% url 'activate_user' user_profile.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit">Activate</button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>    
+        </div>
+
+
+    <div id="approved-doctors-table" class="user-table">
+        <h1>Approved Doctors</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Date of Birth</th>
+                    <th>License Number</th>
+                    <th>Approval Status</th>
+                    <th>current status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doctor in approved_doctors %}
+                    <tr>
+                        <td>{{ doctor.first_name }}</td>
+                        <td>{{ doctor.last_name }}</td>
+                        <td>{{ doctor.email }}</td>
+                        <td>{{ doctor.phone }}</td>
+                        <td>{{ doctor.date_of_birth }}</td>
+                        <td>{{ doctor.license_number }}</td>
+                        <td>Approved</td>
+                        <td>
+                            {% if doctor.is_active %}
+                            <form method="post" action="{% url 'deactivate_user' doctor.id %}">
+                                {% csrf_token %}
+                                <button type="submit">Deactivate</button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{% url 'activate_user' doctor.id %}">
+                                {% csrf_token %}
+                                <button type="submit">Activate</button>
+                            </form>
+                        {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+
+
+
+    <div id="adddoctor-table" class="user-table">
+    
+    <h1>Unapproved Doctors</h1>
+
     <table>
         <thead>
             <tr>
                 <th>First Name</th>
                 <th>Last Name</th>
-                <th>Role</th>
-                <th>DOB</th>
-                <th>Phone Number</th>
                 <th>Email</th>
-                <th>Status</th>
+                <th>phone</th>
+                <th>Date of Birth</th>
+                <th>License number</th>
+                <th>Approval</th>
             </tr>
         </thead>
         <tbody>
-            {% for user_profile in user_profiles %}
-            <tr>
-                <td>{{ user_profile.first_name }}</td>
-                <td>{{ user_profile.last_name }}</td>
-                <td>{{ user_profile.role }}</td>
-                <td>{{ user_profile.dob }}</td>
-                <td>{{ user_profile.phone }}</td>
-                <td>{{ user_profile.email }}</td>
-                <td>{{ user_profile.is_active }}</td>
-            </tr>
+            {% for doctor in doctors %}
+                <tr>
+                    <td>{{ doctor.first_name }}</td>
+                    <td>{{ doctor.last_name }}</td>
+                    <td>{{ doctor.email }}</td>
+                    <td>{{ doctor.phone }}</td>
+                    <td>{{ doctor.date_of_birth}}</td>
+                    <td>{{ doctor.license_number }}</td>
+                    <td>
+                        <form method="post" action="{% url 'approve_doctor' doctor.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Approve</button>
+                        </form>
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
+    
+
+ <!-- Add this form after your 'Doctor' table -->
+ <h1>Add Doctor</h1>
+ <form method="post" action="{% url 'send_registration_email' %}">
+     {% csrf_token %}
+     <label for="name">Name:</label>
+     <input type="text" id="name" name="name" required><br><br>
+ 
+     <label for="email">Email:</label>
+     <input type="email" id="email" name="email" required><br><br>
+ 
+     <button type="submit">Send Registration Email</button>
+ </form>
+ 
+
+
+</div>
+
+
+
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   <script>
+
+
+  // Initialize event listeners for sidebar links
+    document.getElementById("Patients-link").addEventListener("click", showTable("Patients-table"));
+    document.getElementById("doctor-link").addEventListener("click", showTable("approved-doctors-table"));
+    document.getElementById("adddoctor-link").addEventListener("click", showTable("adddoctor-table"));
+    document.getElementById("approved-doctor-link").addEventListener("click", showTable("approved-doctors-table"));
+
+    // Function to show the table by ID
+    function showTable(tableId) {
+        return function () {
+            // Hide all user-tables
+            const userTables = document.getElementsByClassName("user-table");
+            for (let i = 0; i < userTables.length; i++) {
+                userTables[i].style.display = "none";
+            }
+
+            // Show the selected table
+            const tableToDisplay = document.getElementById(tableId);
+            if (tableToDisplay) {
+                tableToDisplay.style.display = "block";
+            }
+        };
+    }
+
+    // Call the showTable function for "Patients" table when the page loads
+    showTable("Patients-table")();
+
+        // Function to show the large message box
+        function showMessageBox() {
+            const messageBox = document.querySelector(".large-message-box");
+            messageBox.style.display = "block";
+        }
+
+        showTable("doctor")();
+        // Function to show the large message box
+        function showMessageBox() {
+            const messageBox = document.querySelector(".large-message-box");
+            messageBox.style.display = "block";
+        }
+    
+        // Function to close the large message box
+        function closeMessageBox() {
+            const messageBox = document.querySelector(".large-message-box");
+            messageBox.style.display = "none";
+        }
+    
+        // Call the showMessageBox function when the page loads
+        window.addEventListener("load", showMessageBox);
+        
+            // Function to show the large message box
+            function showMessageBox() {
+                const messageBox = document.querySelector(".large-message-box");
+                messageBox.style.display = "block";
+            }
+        
+            // Function to close the large message box
+            function closeMessageBox() {
+                const messageBox = document.querySelector(".large-message-box");
+                messageBox.style.display = "none";
+            }
+        
+            // Call the showMessageBox function when the page loads
+            window.addEventListener("load", showMessageBox);
+      
+    </script>
+
 </body>
 </html>
+
+

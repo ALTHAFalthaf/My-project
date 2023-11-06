@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Appointment Confirmation</title>
+    <!-- Add your CSS styles here -->
+</head>
+<body>
+    <div class="confirmation-message">
+        <h1>Appointment Confirmation</h1>
+        <p>Your appointment has been scheduled successfully.</p>
+        <p>Date and Time: {{ appointment.appointment_date }}</p>
+        <p>Doctor: Dr. {{ appointment.doctor.last_name }}</p>
+        <!-- Add more appointment details here -->
+    </div>
+</body>
+</html>

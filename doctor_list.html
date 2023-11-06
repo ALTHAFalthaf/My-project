@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctors</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+        .doctor-box, .bio-box {
+        border: 2px solid #007bff; /* Blue outline color, you can change it */
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+    }
+
+    .doctor-image {
+        width: 150px; /* Adjust the size as needed */
+        height: 150px; /* Adjust the size as needed */
+        border: 2px solid #007bff; /* Blue outline color, you can change it */
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .doctor-image img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+        h1 {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        li {
+            margin: 20px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            text-align: center;
+            max-width: 300px;
+        }
+
+        img {
+            width: 100px;
+            border-radius: 50%;
+        }
+
+        a {
+            display: block;
+            background-color: #007BFF;
+            color: #fff;
+            padding: 5px 10px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+
+        a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Doctors</h1>
+    <ul>
+        {% for doctor in doctors %}
+            <li>
+                <div class="doctor-box">
+                    <div class="doctor-image">
+                        <img src="{{ doctor.photo.url}}" target="_blank" alt="{{ doctor.first_name }}" class="img-fluid rounded-circle">
+                    </div>
+                    <div class="doctor-box">
+                        <h2>{{ doctor.first_name }} {{ doctor.last_name }}</h2>
+                        <p><strong>Education:</strong> {{doctor.certification}}</p>
+                        <p><strong>Specialization:</strong> {{ doctor.specialty }}</p>
+                    </div>
+                    <a href="{% url 'make_appointment' %}">Make an Appointment</a>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

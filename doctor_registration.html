@@ -25,6 +25,7 @@
 
         h2 {
             text-align: center;
+            background-color: rgb(0, 158, 40); /* Background color for contrast */
         }
 
         label {
@@ -66,7 +67,7 @@
 </head>
 <body>
     <div class="form-container">
-        <h2>Add Doctor</h2>
+        <h2>Doctor Registration</h2>
         <form method="post" enctype="multipart/form-data" action="{% url 'doctor_registration' %}" id="addDoctorForm">
             {% csrf_token %}
             <!-- Personal Information -->
@@ -105,7 +106,7 @@
             <label for="photo">Upload Photo:</label>
             <input type="file" id="photo" name="photo" required>
         
-            <button type="submit">Add Doctor</button>
+            <button type="submit">Register</button>
         </form>
         
     </div>

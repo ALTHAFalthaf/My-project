@@ -48,7 +48,7 @@ class CustomUser(AbstractUser):
     username = models.CharField(max_length=150, unique=False)
     # Define boolean fields for specific roles
     is_child = models.BooleanField(default=True)
-    is_doctor = models.BooleanField(default=False)
+    is_doctor = models.BooleanField(default=True)
     
     
     USERNAME_FIELD = 'email'

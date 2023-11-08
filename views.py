@@ -261,6 +261,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from .models import Doctor
+from .models import Appointment 
 
 def send_registration_email(request):
     if request.method == 'POST':
@@ -295,8 +296,9 @@ def adminreg(request):
                 # Filter doctors based on the 'approved' field
                 doctors = Doctor.objects.filter(approved=False)
                 approved_doctors = Doctor.objects.filter(approved=True)
+                appointments = Appointment.objects.all()
 
-                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,}
+                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,'appointment': appointment}
                 return render(request, 'adminreg.html', context)
             else:
                 messages.error(request, "You don't have permission to access this page.")
@@ -421,25 +423,52 @@ def generate_password(length=12):
 from django.shortcuts import render, redirect
 from .models import Appointment, Doctor
 from .forms import AppointmentForm
+from django.contrib.auth.decorators import login_required
+
+@login_required  # This decorator ensures the user is authenticated
 
 
 def make_appointment(request, doctor_id):
+    
+    doctor = Doctor.objects.get(pk=doctor_id)
+
     if request.method == 'POST':
         form = AppointmentForm(request.POST)
         if form.is_valid():
             appointment = form.save(commit=False)
             appointment.user = request.user
-            appointment.doctor = Doctor.objects.get(pk=doctor_id)
+            appointment.doctor = doctor    # Use the previously retrieved doctor instance
             appointment.save()
             return redirect('appointment_confirmation', appointment_id=appointment.id)
     else:
-         form = AppointmentForm(initial={'user_first_name': request.user.first_name, 'user_phone': request.user.phone,})
+         form = AppointmentForm(initial={'user_first_name': request.user.first_name, 'user_phone': request.user.phone,'doctor': doctor})
+         
 
-    return render(request, 'make_appointment.html', {'form': form,})
+    return render(request, 'make_appointment.html', {'form': form,'doctor': doctor})
 
 def appointment_confirmation(request, appointment_id):
     appointment = Appointment.objects.get(id=appointment_id)
     return render(request, 'appointment_confirmation.html', {'appointment': appointment})
+
+
+from django.contrib.auth.decorators import login_required
+from .models import Doctor
+
+@login_required
+def doctor_appointments(request):
+    try:
+        # Attempt to get the associated Doctor model for the current user
+        doctor = Doctor.objects.get(user=request.user)
+    except Doctor.DoesNotExist:
+        # If a Doctor model doesn't exist, you can create one
+        doctor = Doctor(user=request.user)  # Associate the user with the Doctor model
+        doctor.save()
+
+    # Now you can work with the 'doctor' object
+    # ...
+
+    return render(request, 'doctor_appointments.html', {'doctor': doctor})
+
 
 
 

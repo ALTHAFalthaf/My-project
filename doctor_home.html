@@ -87,15 +87,16 @@
                     <a class="nav-link" href="">Home <span class="sr-only">(current)</span></a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="{% url 'book_appointment' %}">Appointment</a>
+                    <a class="nav-link" href="{% url 'doctor_appointments'  %}">Appointments</a>
                   </li>
+                
                   <li class="nav-item">
                     <a class="nav-link" href="contact.html">Contact Us</a>
                   </li>
                   <div class="quote_btn-container">
                     <li class="nav-item ">
                         <a class="nav-link" href="{% url 'myprofile' %}" id="navbar" >
-                            <i class="fa fa-user" aria-hidden="true"></i><span>My Profile</span>
+                            <i class="fa fa-user" aria-hidden="true"></i><span>Welcome {{ doctor.first_name }}</span>
                         </a>
                   <div class="quote_btn-container">
                     <li class="nav-item">

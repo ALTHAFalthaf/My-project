@@ -172,6 +172,7 @@
         <a href="#doctor" class="nav-link" id="doctor-link">Doctors</a>
         <a href="#add-doctor" class="nav-link" id="adddoctor-link">Add Doctor</a>
         <a href="#approved-doctors" class="nav-link" id="approved-doctor-link">Approved Doctors</a>
+        <a href="#appointment" class="nav-link" id="appointment-link">Appointments</a>
         <ul class="submenu">
             <li><a href="{% url 'doctor_list' %}">View Doctors</a></li>
         </ul>
@@ -338,6 +339,34 @@
 
 </div>
 
+
+
+<div id="appointment-table" class="user-table"></div>
+<table>
+    <thead>
+        <tr>
+            <th>Appointment Date</th>
+            <th>Appointment Time</th>
+            <th>Doctor</th>
+            <th>User</th>
+            <th>Phone</th>
+            <th>Comments</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for appointment in appointments %}
+            <tr>
+                <td>{{ appointment.appointment_date }}</td>
+                <td>{{ appointment.appointment_time }}</td>
+                <td>{{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}</td>
+                <td>{{ appointment.user.first_name }} {{ appointment.user.last_name }}</td>
+                <td>{{ appointment.user.phone }}</td>
+                <td>{{ appointment.comments }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
 
 
    

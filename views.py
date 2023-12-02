@@ -74,7 +74,12 @@ def homepage(request):
 
 
 
+def about(request):
+    return render(request, 'about.html')  
 
+
+def contact(request):
+    return render(request, 'contact.html')  
 
 
 
@@ -84,8 +89,6 @@ def doctor_added(request):
     return render(request, 'doctor_added.html')  # Display the success page
 
 
-def doctor_home(request):
-    return render(request, 'doctor_home.html')  # Display the success page
 
 
 
@@ -97,9 +100,6 @@ def doctor_list(request):
     doctors = Doctor.objects.all()
     context = {'doctors': doctors}
     return render(request, 'doctor_list.html', context)
-
-def doctor_home(request):
-     return render(request, 'doctor_home.html')
 
 
 
@@ -156,7 +156,7 @@ def loginn(request):
                     error_message = "Invalid credentials"
                     messages.error(request, error_message)
             else:
-                error_message = "Your account is not active. Please contact the admin."
+                error_message = "Incorrect username or Password"
                 messages.error(request, error_message)
 
         except ObjectDoesNotExist:
@@ -177,6 +177,7 @@ def signup(request):
         email = request.POST.get('email')
         phone=request.POST.get('phone')
         dob=request.POST.get('dob')
+        gender=request.POST.get('gender')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
       
@@ -187,7 +188,7 @@ def signup(request):
         elif password != confirm_password:
             messages.error(request, "Passwords do not match")
         else:
-            user = CustomUser(first_name=firstname,last_name=lastname,email=email,phone=phone,dob=dob,role='CHILD')  # Change role as needed
+            user = CustomUser(first_name=firstname,last_name=lastname,email=email,phone=phone,dob=dob,gender=gender,role='CHILD')  # Change role as needed
             user.set_password(password)
             user.save()
             messages.success(request, "Registered successfully")
@@ -298,7 +299,7 @@ def adminreg(request):
                 approved_doctors = Doctor.objects.filter(approved=True)
                 appointments = Appointment.objects.all()
 
-                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,'appointment': appointment}
+                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,'appointments': appointments}
                 return render(request, 'adminreg.html', context)
             else:
                 messages.error(request, "You don't have permission to access this page.")
@@ -420,84 +421,194 @@ def generate_password(length=12):
 
 
 
+
+
 from django.shortcuts import render, redirect
+from django.contrib import messages
 from .models import Appointment, Doctor
-from .forms import AppointmentForm
 from django.contrib.auth.decorators import login_required
 
-@login_required  # This decorator ensures the user is authenticated
+@login_required
+def book_appointment(request, doctor_id):
+    try:
+        # Assuming that the doctor_id is passed in the URL
+        doctor = Doctor.objects.get(id=doctor_id)
+
+        if request.method == 'POST':
+            appointment_date = request.POST.get('appointment_date')
+            appointment_time = request.POST.get('appointment_time')
+            description = request.POST.get('description')
+            comments = request.POST.get('comments')
+
+            # Assuming the user is the patient making the appointment
+            user = request.user
+
+            # Create an Appointment object
+            appointment = Appointment.objects.create(
+                user=user,
+                doctor=doctor,
+                appointment_date=appointment_date,
+                appointment_time=appointment_time,
+                description=description,
+                comments=comments
+            )
+
+            # Add any additional logic here (e.g., send confirmation email)
+
+            messages.success(request, 'Appointment booked successfully!')
+            return redirect('appointment_confirmation', appointment_id=appointment.id)  # You can redirect to a success page or any other page
+
+        return render(request, 'book_appointment.html', {'doctor': doctor, 'user': request.user})
+
+    except Doctor.DoesNotExist:
+        messages.error(request, 'Doctor not found.')
+        return redirect('appointment-error')  # You can redirect to an error page or any other page
 
 
-def make_appointment(request, doctor_id):
-    
-    doctor = Doctor.objects.get(pk=doctor_id)
-
-    if request.method == 'POST':
-        form = AppointmentForm(request.POST)
-        if form.is_valid():
-            appointment = form.save(commit=False)
-            appointment.user = request.user
-            appointment.doctor = doctor    # Use the previously retrieved doctor instance
-            appointment.save()
-            return redirect('appointment_confirmation', appointment_id=appointment.id)
-    else:
-         form = AppointmentForm(initial={'user_first_name': request.user.first_name, 'user_phone': request.user.phone,'doctor': doctor})
-         
-
-    return render(request, 'make_appointment.html', {'form': form,'doctor': doctor})
+from django.shortcuts import render
+from .models import Appointment
+import razorpay
+from django.views.decorators.csrf import csrf_exempt
 
 def appointment_confirmation(request, appointment_id):
-    appointment = Appointment.objects.get(id=appointment_id)
-    return render(request, 'appointment_confirmation.html', {'appointment': appointment})
+    amount_in_paise = int(500 * 100)
+    
+    DATA = {
+        "amount": amount_in_paise,
+        "currency":"INR",
+        "receipt":"receipt1",
+        "notes":{
+            "key1": "value3",
+            "key2": "value2",
+        }
+    }
+
+    client = razorpay.Client(auth=("rzp_test_EZL2rQubxJwxrv","RhRefR6hrzAdlzxNVUm6s4Ja"))
+    payment = client.order.create(data=DATA)
+
+    context = {
+        'amount': amount_in_paise,
+        'payment': payment
+    }
+
+    try:
+        # Assuming the appointment_id is passed in the URL
+        appointment = Appointment.objects.get(id=appointment_id)
+        context['appointment'] = appointment
+        return render(request, 'appointment_confirmation.html', context)
+
+    except Appointment.DoesNotExist:
+        # Handle the case where the appointment does not exist
+        return render(request, 'appointment-error.html')
 
 
-from django.contrib.auth.decorators import login_required
+
+
+# views.py
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .models import Appointment
+
+@require_POST
+def check_time_availability(request):
+    appointment_time = request.POST.get('appointment_time')
+    appointment_date = request.POST.get('appointment_date')
+
+    # Check if there is an existing appointment for the chosen time slot
+    existing_appointment = Appointment.objects.filter(
+        appointment_date=appointment_date,
+        appointment_time=appointment_time
+    ).exists()
+
+    return JsonResponse({'available': not existing_appointment})
+
+
+
+
+# views.py
+
+from django.shortcuts import render
 from .models import Doctor
+from .models import Appointment
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def doctor_home(request):
+    return render (request,'doctor_home.html')
+
 
 @login_required
 def doctor_appointments(request):
-    try:
-        # Attempt to get the associated Doctor model for the current user
-        doctor = Doctor.objects.get(user=request.user)
-    except Doctor.DoesNotExist:
-        # If a Doctor model doesn't exist, you can create one
-        doctor = Doctor(user=request.user)  # Associate the user with the Doctor model
+    doctor = request.user.doctor  # Assuming the doctor is associated with the user
+    appointments = Appointment.objects.filter(doctor=doctor)
+    return render(request, 'doctor_appointments.html', {'doctor': doctor, 'appointments': appointments})
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from .models import Doctor
+
+User = get_user_model()
+
+@login_required
+def doctor_profile(request):
+    doctor = request.user.doctor
+    profile_updated = False  # Initialize the variable
+
+    if request.method == 'POST':
+        # Handle profile update
+        doctor.first_name = request.POST.get('first_name', '')
+        doctor.last_name = request.POST.get('last_name', '')
+        doctor.email = request.POST.get('email', '')
+        doctor.phone = request.POST.get('phone', '')
+
+        # Handle photo upload
+        photo = request.FILES.get('photo')
+        if photo:
+            # If a new photo is provided, save it and update the doctor's photo field
+            photo_name = default_storage.save(f'doctor/photos/{user.doctor.id}/{photo.name}', photo)
+            doctor.photo = photo_name
         doctor.save()
 
-    # Now you can work with the 'doctor' object
-    # ...
+        # Fetch the updated data from the database
+        doctor = Doctor.objects.get(id=doctor.id)
 
-    return render(request, 'doctor_appointments.html', {'doctor': doctor})
+        profile_updated = True
 
-
-
-
+    return render(request, 'doctor_profile.html', {'doctor': doctor, 'profile_updated': profile_updated})
 
 
 
+@login_required
+def change_password(request):
+    password_updated = False  # Initialize the variable
+
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            password_updated = True
+            update_session_auth_hash(request, user)  # Important to maintain the session
+            
+
+        else:
+            messages.error(request, 'Error changing password. Please correct the errors.')
+    else:
+        form = PasswordChangeForm(request.user)
+
+
+    return render(request, 'change_password.html', {'form': form,  'password_updated': password_updated})
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ 
 
 
 
@@ -507,6 +618,100 @@ def doctor_appointments(request):
 
 
 
+
+#Vaccintion views
+
+
+def vaccination_home(request):
+    return render(request, 'vaccination_home.html')  
+
+
+
+
+#payment
+
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt
+def payment_success(request):
+
+    messages.success(request,'payment successfull')
+    return redirect('homepage')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#vaccine_record
+
+# views.py
+#import pandas as pd
+#from django.http import HttpResponse
+#from io import BytesIO
+#from .models import VaccineRecord
+
+#def export_vaccine_records_to_excel(request):
+    # Assuming you have a VaccineRecord model
+   # vaccine_records = VaccineRecord.objects.all()
+
+    # Create a DataFrame from the queryset
+   # data = {
+     #   'Child Name': [record.child.first_name for record in vaccine_records],
+     #   'Vaccine Name': [record.vaccine.name for record in vaccine_records],
+      #  'Administration Date': [record.administration_date for record in vaccine_records],
+      #  'Administered By': [record.administered_by.first_name if record.administered_by else 'N/A' for record in vaccine_records],
+      #  'Comments': [record.comments for record in vaccine_records],
+  #  }
+
+   # df = pd.DataFrame(data)
+
+    # Create an in-memory Excel file
+  #  excel_file = BytesIO()
+  #  with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
+  #      df.to_excel(writer, index=False, sheet_name='Vaccine Records')
+
+    # Move the buffer's position to the beginning for reading
+ #   excel_file.seek(0)
+
+    # Create a response with the Excel file
+   # response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+   # response['Content-Disposition'] = 'attachment; filename=vaccine_records.xlsx'
+
+   # return response
+
+
+
+
+
+
+
+    
 
 
 

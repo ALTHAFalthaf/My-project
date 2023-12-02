@@ -1,13 +1,48 @@
 from django import forms
-from .models import Appointment  # Import the Appointment model
+from .models import Schedule, Record, Vaccine, Immunogen
 
-class AppointmentForm(forms.ModelForm):
-    user_first_name = forms.CharField(max_length=100, required=False)
-    user_phone = forms.CharField(max_length=15, required=False)
-    doctor_first_name = forms.CharField(max_length=100, required=False)
-    
+class ScheduleForm(forms.ModelForm):    
+    exp_date = forms.CharField(label='Vaccine Expiration Date')
+    date_immunized = forms.CharField(label='Date of Immunization',
+                                     widget=forms.TextInput(attrs={
+                                         'class': 'form-control',
+                                         'placeholder': 'dd/mm/yy',
+
+                                     }))
+    exp_date = forms.CharField(label='Vaccine Expiration Date',
+                                     widget=forms.TextInput(attrs={
+                                         'class': 'form-control',
+                                         'placeholder': 'dd/mm/yy',
+
+                                     }))
+    vaccine_type = forms.ModelChoiceField(queryset=Vaccine.objects.all(), initial=0, label="Vaccine Type")
 
     class Meta:
-        model = Appointment
-        fields = ['user_first_name', 'user_phone','doctor_first_name','appointment_date', 'appointment_time', 'description', 'comments']
-        
+        model = Schedule
+        fields = [ 'date_immunized','vaccine_type','exp_date']
+
+TIME = (
+    ('B', 'Birth'),
+    ('6w', '6 weeks (Infants)'),
+    ('10w', '10 weeks (Infants)'),
+    ('14w', '14 weeks (Infants)'),
+    ('6m', '6 moonths (Infants)'),
+    ('9m', '9 months (Infants)'),
+    ('12m', '12-24 months (Infants)'),
+    ('15m', '15-18 months (Infants)'),
+    ('24m', '24 months (Infants)'),
+    ('L', 'Less than 13 years '),
+)
+
+
+class VaccineForm(forms.ModelForm):
+    timing = forms.ChoiceField(label="Age/Timing", choices=TIME)
+    imu_id = forms.ModelChoiceField(queryset=Immunogen.objects.all(), initial=0, label="Vaccine Type")
+    description = forms.CharField(label='Vaccine Description')
+     
+    class Meta:
+        model = Vaccine
+        fields =['timing', 'imu_id', 'description']
+
+
+

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px;
+            max-width: 400px;
+            text-align: left;
+        }
+
+        .card-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .text-primary {
+            color: #007bff;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-top: 10px;
+            margin-right: 10px;
+            text-decoration: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #007bff;
+            color: #007bff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .btn-outline-primary {
+            background-color: transparent;
+        }
+
+        .btn-outline-danger {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: #fff;
+        }
+    </style>
+    <title>Schedule Details</title>
+</head>
+<body>
+
+<div class="card">
+    <div class="card-header">
+        <a>{{ schedule.user.first_name }} {{ schedule.user.last_name }} schedule details</a>
+    </div>
+    <div class="card-body">
+        <h5 class="card-title"> <i class="fas fa-pills text-primary"></i> <small>Vaccine given: {{ schedule.vaccine_type }}</small></h5>
+        <h5 class="card-title"> <i class="fas fa-calendar text-primary"></i> <small>Date given: {{ schedule.date_immunized }}</small></h5>
+        <h5 class="card-title"> <i class="fas fa-calendar text-primary"></i> <small>Next Scheduled date: {{ schedule.exp_date }}</small></h5>
+       
+
+        <!-- <p class="card-text">With supporting text below as a natural lead-in to additional content.</p> -->
+        <a href="{{ schedule.get_update_url }}" class="btn btn-sm btn-outline-primary mt-3">Update</a>
+        <a href="{{ schedule.get_delete_url }}" class="btn btn-sm btn-outline-danger mt-3">Delete</a>
+    </div>
+</div>
+
+</body>
+</html>

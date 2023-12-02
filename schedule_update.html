@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Include the following CDN link for Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-right: 10px;
+            text-decoration: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-outline-success {
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .btn-outline-success:hover {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .btn-outline-secondary {
+            border-color: #6c757d;
+            color: #6c757d;
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: #6c757d;
+            color: #fff;
+        }
+    </style>
+    <title>Update Schedule</title>
+</head>
+<body>
+
+<div class="container">
+    <form method="POST" action="{{ schedule.get_update_url }}">
+        {% csrf_token %} {{ form|crispy }}
+
+        <div class="form-group">
+            <button class="btn btn-outline-success mr-2" type="submit">Update</button>
+            <a class="btn btn-outline-secondary" href="{{ schedule.get_absolute_url }}">Cancel</a>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

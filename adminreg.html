@@ -168,13 +168,13 @@
     {% endif %}
     <div class="sidebar">
         <div class="dashboard-heading">Dashboard</div>
-        <a href="#Patients" class="nav-link" id="Patients-link">Patients</a>
+        <a href="#Patients" class="nav-link" id="Patients-link">Users</a>
         <a href="#doctor" class="nav-link" id="doctor-link">Doctors</a>
         <a href="#add-doctor" class="nav-link" id="adddoctor-link">Add Doctor</a>
         <a href="#approved-doctors" class="nav-link" id="approved-doctor-link">Approved Doctors</a>
         <a href="#appointment" class="nav-link" id="appointment-link">Appointments</a>
         <ul class="submenu">
-            <li><a href="{% url 'doctor_list' %}">View Doctors</a></li>
+            
         </ul>
         <a href="{% url 'logout' %}" class="nav-link">Logout</a>
     </div>
@@ -191,7 +191,7 @@
        
 
         <div id="Patients-table" class="user-table">
-            <h2>Patients</h2>
+            <h2>Users</h2>
             <!-- Add the table for patients here -->
             <form method="post">
                 {% csrf_token %} 
@@ -209,33 +209,38 @@
                     </thead>
                     <tbody>
                         {% for user_profile in user_profiles %}
-                            {% if not user_profile.is_superuser %} {# Check if the user is not a superuser #}
-                                <tr>
-                                    <td>{{ user_profile.first_name }}</td>
-                                    <td>{{ user_profile.last_name }}</td>
-                                    <td>{{ user_profile.email }}</td>
-                                    <td>{{ user_profile.dob }}</td>
-                                    <td>{{ user_profile.phone }}</td>
-                                    <td>{{ user_profile.role }}</td>
-                                    <td>
-                                        {% if user_profile.is_active %}
-                                            <form method="post" action="{% url 'deactivate_user' user_profile.id %}">
-                                                {% csrf_token %}
-                                                <button type="submit">Deactivate</button>
-                                            </form>
-                                        {% else %}
-                                            <form method="post" action="{% url 'activate_user' user_profile.id %}">
-                                                {% csrf_token %}
-                                                <button type="submit">Activate</button>
-                                            </form>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endif %}
+                            {% if not user_profile.is_superuser and user_profile.role != 'Doctor' %} {# Check if the user is not a superuser #}
+                                    <tr>
+                                        <td>{{ user_profile.first_name }}</td>
+                                        <td>{{ user_profile.last_name }}</td>
+                                        <td>{{ user_profile.email }}</td>
+                                        <td>{{ user_profile.dob }}</td>
+                                        <td>{{ user_profile.phone }}</td>
+                                        <td>{{ user_profile.role }}</td>
+                                        <td>
+                                            {% if user_profile.is_active %}
+                                                <form method="post" action="{% url 'deactivate_user' user_profile.id %}">
+                                                   {% csrf_token %}
+                                                   <button type="submit">Deactivate</button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" action="{% url 'activate_user' user_profile.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit">Activate</button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                            {% endif %}   
                         {% endfor %}
                     </tbody>
                 </table>    
         </div>
+
+
+
+
+    
 
 
     <div id="approved-doctors-table" class="user-table">
@@ -249,6 +254,9 @@
                     <th>Phone</th>
                     <th>Date of Birth</th>
                     <th>License Number</th>
+                    <th>License copy</th>
+                    <th>Resume</th>
+                    <th>Photo</th>
                     <th>Approval Status</th>
                     <th>current status</th>
                 </tr>
@@ -261,7 +269,28 @@
                         <td>{{ doctor.email }}</td>
                         <td>{{ doctor.phone }}</td>
                         <td>{{ doctor.date_of_birth }}</td>
-                        <td>{{ doctor.license_number }}</td>
+                        <td>{{ doctor.license_number}}</td>
+                        <td>
+                            {% if doctor.license_copy %}
+                                <a href="{{ doctor.license_copy.url }}" download>Download</a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if doctor.resume %}
+                                <a href="{{ doctor.resume.url }}" download>Download</a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if doctor.photo %}
+                                <img src="{{ doctor.photo.url }}" alt="Doctor Photo" style="width: 50px; height: 50px;">
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
                         <td>Approved</td>
                         <td>
                             {% if doctor.is_active %}
@@ -281,7 +310,42 @@
             </tbody>
         </table>
     </div>
-    
+
+
+
+    <div id="appointment-table" class="user-table">
+    <table>
+        <thead>
+            <tr>
+                <th>Appointment Date</th>
+                <th>Appointment Time</th>
+                <th>Doctor</th>
+                <th>Patient</th>
+                <th>Phone</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appointment in appointments %}
+                <tr>
+                    <td>{{ appointment.appointment_date }}</td>
+                    <td>{{ appointment.appointment_time }}</td>
+                    <td>{{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}</td>
+                    <td>{{ appointment.user.first_name }} {{ appointment.user.last_name }}</td>
+                    <td>{{ appointment.user.phone }}</td>
+                    <td>{{ appointment.comments }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+
+
+
+
+
+
 
 
 
@@ -324,61 +388,61 @@
 
  <!-- Add this form after your 'Doctor' table -->
  <h1>Add Doctor</h1>
- <form method="post" action="{% url 'send_registration_email' %}">
-     {% csrf_token %}
-     <label for="name">Name:</label>
-     <input type="text" id="name" name="name" required><br><br>
- 
-     <label for="email">Email:</label>
-     <input type="email" id="email" name="email" required><br><br>
- 
-     <button type="submit">Send Registration Email</button>
- </form>
- 
+<form method="post" action="{% url 'send_registration_email' %}" onsubmit="return validateForm()">
+    {% csrf_token %}
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required><br><br>
+
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required oninput="validateEmail()">
+    <span id="email-error" style="color: red;"></span><br><br>
+
+    <button type="submit">Send Registration Email</button>
+</form>
+
+<script>
+    function validateEmail() {
+        var email = document.getElementById('email').value;
+        var emailError = document.getElementById('email-error');
+
+        // Email validation regex
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            emailError.textContent = 'Invalid email address';
+        } else {
+            emailError.textContent = ''; // Clear error message
+        }
+    }
+
+    function validateForm() {
+        var email = document.getElementById('email').value;
+        var emailError = document.getElementById('email-error');
+
+        // Email validation regex
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            emailError.textContent = 'Invalid email address';
+            return false; // Prevent form submission
+        } else {
+            emailError.textContent = ''; // Clear error message
+            return true; // Allow form submission
+        }
+    }
+</script>
+
+   
+  
 
 
 </div>
 
 
 
-<div id="appointment-table" class="user-table"></div>
-<table>
-    <thead>
-        <tr>
-            <th>Appointment Date</th>
-            <th>Appointment Time</th>
-            <th>Doctor</th>
-            <th>User</th>
-            <th>Phone</th>
-            <th>Comments</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for appointment in appointments %}
-            <tr>
-                <td>{{ appointment.appointment_date }}</td>
-                <td>{{ appointment.appointment_time }}</td>
-                <td>{{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}</td>
-                <td>{{ appointment.user.first_name }} {{ appointment.user.last_name }}</td>
-                <td>{{ appointment.user.phone }}</td>
-                <td>{{ appointment.comments }}</td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
 
 
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
+
    
    
    
@@ -387,33 +451,35 @@
    
    
    <script>
+   
+   
+// Initialize event listeners for sidebar links
+document.getElementById("Patients-link").addEventListener("click", showTable("Patients-table"));
+document.getElementById("doctor-link").addEventListener("click", showTable("approved-doctors-table"));
+document.getElementById("adddoctor-link").addEventListener("click", showTable("adddoctor-table"));
+document.getElementById("approved-doctor-link").addEventListener("click", showTable("approved-doctors-table"));
+document.getElementById("appointment-link").addEventListener("click", showTable("appointment-table")); // Added this line
 
+// Function to show the table by ID
+function showTable(tableId) {
+    return function () {
+        // Hide all user-tables
+        const userTables = document.getElementsByClassName("user-table");
+        for (let i = 0; i < userTables.length; i++) {
+            userTables[i].style.display = "none";
+        }
 
-  // Initialize event listeners for sidebar links
-    document.getElementById("Patients-link").addEventListener("click", showTable("Patients-table"));
-    document.getElementById("doctor-link").addEventListener("click", showTable("approved-doctors-table"));
-    document.getElementById("adddoctor-link").addEventListener("click", showTable("adddoctor-table"));
-    document.getElementById("approved-doctor-link").addEventListener("click", showTable("approved-doctors-table"));
+        // Show the selected table
+        const tableToDisplay = document.getElementById(tableId);
+        if (tableToDisplay) {
+            tableToDisplay.style.display = "block";
+        }
+    };
+}
 
-    // Function to show the table by ID
-    function showTable(tableId) {
-        return function () {
-            // Hide all user-tables
-            const userTables = document.getElementsByClassName("user-table");
-            for (let i = 0; i < userTables.length; i++) {
-                userTables[i].style.display = "none";
-            }
+// Call the showTable function for "Patients" table when the page loads
+showTable("Patients-table")();
 
-            // Show the selected table
-            const tableToDisplay = document.getElementById(tableId);
-            if (tableToDisplay) {
-                tableToDisplay.style.display = "block";
-            }
-        };
-    }
-
-    // Call the showTable function for "Patients" table when the page loads
-    showTable("Patients-table")();
 
         // Function to show the large message box
         function showMessageBox() {

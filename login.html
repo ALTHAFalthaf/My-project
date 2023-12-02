@@ -28,13 +28,14 @@
             box-shadow: 0 0 20px rgba(236, 223, 223, 0.2);
             height: 75vh;
             background-color:rgba(59, 116, 153, 0.885)
+            
         }
 
         .image-section {
             flex: 1;
-            background-image: url('{% static "myproject/images/img6.jpg" %}');
+            background-image: url('{% static "myproject/images/earth.png" %}');
             background-repeat: no-repeat;
-            background-size: cover;
+            background-size: contain;
         }
 
         .form-section {
@@ -116,7 +117,7 @@
             <h2>Login</h2>
             <form id="login-form" action="{% url 'login' %}" method="post">
                 {% csrf_token %}
-                <label for="email">Email:</label>
+                <label for="email">email:</label>
                 <input type="email" id="email" name="email" placeholder="Enter your email" required>
                 <div class="error-message" id="email-error"></div>
 
@@ -134,51 +135,50 @@
             {% endfor %}
         </div>
 
-  
-
-    <script>
-        const loginForm = document.getElementById('login-form');
-        const email = document.getElementById('email');
-        const password = document.getElementById('password');
-        const emailError = document.getElementById('email-error');
-        const passwordError = document.getElementById('password-error');
-    
-        function showError(input, errorElement, message) {
-            errorElement.textContent = message;
-        }
-    
-        function clearError(errorElement) {
-            errorElement.textContent = '';
-        }
-    
-        email.addEventListener('input', function () {
-        clearError(emailError);
-        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-        if (!emailPattern.test(email.value)) {
-            showError(email, emailError, 'Invalid email format');
-        }
-    });
-    
-        password.addEventListener('input', function () {
-            clearError(passwordError);
-            const passwordPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{8,}$/;
-            if (!passwordPattern.test(password.value)) {
-                showError(password, passwordError, 'Password must contain at least one numeric digit, one uppercase letter, one lowercase letter, and one special character, and be at least 8 characters long');
+        <script>
+            const loginForm = document.getElementById('login-form');
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            const emailError = document.getElementById('email-error');
+            const passwordError = document.getElementById('password-error');
+            const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        
+            function showError(input, errorElement, message) {
+                errorElement.textContent = message;
             }
-        });
-    
-        loginForm.addEventListener('submit', function (e) {
-            if (emailError.textContent || passwordError.textContent) {
-                e.preventDefault();
+        
+            function clearError(errorElement) {
+                errorElement.textContent = '';
             }
-        });
-        const signupButton = document.getElementById('signup-button');
-        signupButton.addEventListener('click', function () {
-             alert('Registration successful'); // Display an alert
-    });
-    </script>
-
-    </div>
-
+        
+            // Real-time validation for email
+            email.addEventListener('input', function () {
+                clearError(emailError);
+                if (!emailPattern.test(email.value)) {
+                    showError(email, emailError, 'Invalid email format');
+                }
+            });
+        
+            // Real-time validation for password
+            password.addEventListener('input', function () {
+                clearError(passwordError);
+                if (!passwordRegex.test(password.value)) {
+                    showError(password, passwordError, 'Password must contain at least one lowercase letter, one uppercase letter, one numeric digit, and one special character');
+                }
+            });
+        
+            loginForm.addEventListener('submit', function (e) {
+                if (emailError.textContent || passwordError.textContent) {
+                    e.preventDefault();
+                }
+            });
+        
+            const signupButton = document.getElementById('signup-button');
+            signupButton.addEventListener('click', function () {
+                alert('Registration successful'); // Display an alert
+            });
+        </script>
+        
     </body>
     </html>

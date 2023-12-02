@@ -127,6 +127,16 @@
                 <input type="date" id="dob" name="dob" required>
                 <div class="error-message" id="dob-error"></div>
 
+
+                <label for="gender">Gender:</label>
+                <select id="gender" name="gender" required>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                </select>
+                <div class="error-message" id="gender-error"></div>
+
+
                 <button type="submit" value="signup">Sign Up</button>
            
         </div>
@@ -134,30 +144,27 @@
         <div class="right-block">
             <h2>Additional Information</h2>
             
-                <label for="role">Role:</label>
-                <select id="role" name="role" required>
-                    <option value="" disabled selected>Select your role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="child">Child</option>
-                    <option value="Doctor">Doctor</option>
-                </select>
-                <div class="error-message" id="role-error"></div>
+        
 
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 <div class="error-message" id="password-error"></div>
 
-                <label for="confirm-password">Confirm Password:</label>
-                <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
-                <div class="error-message" id="confirm-password-error"></div>
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required>
+                <div class="error-message" id="confirm_password-error"></div>
             </form>
         </div>
 
         <div class="signup-link">Already have an account? <a href="{% url 'login' %}">Log in here</a>.</div>
+       
+       
         {% for message in messages %}
             <h3 style="color: darkred">{{ message }}</h3>
         {% endfor %}
     </div>
+
+    
 
 
     <script>
@@ -167,17 +174,18 @@
     const email = document.getElementById('email');
     const phone = document.getElementById('phone');
     const dob = document.getElementById('dob');
-    const role = document.getElementById('role');
+    const gender = document.getElementById('gender');
     const password = document.getElementById('password');
-    const confirmPassword = document.getElementById('confirm-password');
+    const confirmPassword = document.getElementById('confirm_password');
     const fnameError = document.getElementById('fname-error');
     const lnameError = document.getElementById('lname-error');
     const emailError = document.getElementById('email-error');
     const phoneError = document.getElementById('phone-error');
     const dobError = document.getElementById('dob-error');
-    const roleError = document.getElementById('role-error');
+    const genderError = document.getElementById('gender-error');
     const passwordError = document.getElementById('password-error');
-    const confirmPasswordError = document.getElementById('confirm-password-error');
+    const confirmPasswordError = document.getElementById('confirm-password_error');
+    const successMessage = document.getElementById('success-message');
 
     function showError(input, errorElement, message) {
         errorElement.textContent = message;
@@ -186,6 +194,20 @@
     function clearError(errorElement) {
         errorElement.textContent = '';
     }
+
+    // Event listener for form submission
+    signupForm.addEventListener('submit', function (e) {
+            // Reset success message
+            successMessage.textContent = '';
+
+
+    // Check if there are any error messages still displayed
+        if (fnameError.textContent || lnameError.textContent || emailError.textContent ||
+            phoneError.textContent || dobError.textContent ||
+            passwordError.textContent || confirmPasswordError.textContent) {
+            e.preventDefault();
+        }
+    });
 
     fname.addEventListener('input', function () {
     clearError(fnameError);
@@ -204,37 +226,63 @@
     });
 
     email.addEventListener('input', function () {
-        clearError(emailError);
-        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-        if (!emailPattern.test(email.value)) {
-            showError(email, emailError, 'Invalid email format');
-        }
+    clearError(emailError);
+    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailPattern.test(email.value)) {
+        showError(email, emailError, 'Invalid email format');
+    }
     });
 
     phone.addEventListener('input', function () {
     clearError(phoneError);
-    const phonePattern = /^\+91\d{10}$/;
+    const phonePattern = /^[6-9][0-9]{9}$/;
     if (!phonePattern.test(phone.value)) {
-        showError(phone, phoneError, 'Phone number must start with +91 and be 10 digits long');
-    }
+        showError(phone, phoneError, 'Phone number must start with a digit between 6 and 9, followed by 9 more digits and donot accept alphabets and special characters');
+        }
     });
+
 
 
     dob.addEventListener('input', function () {
-        clearError(dobError);
-        const dobPattern = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dobPattern.test(dob.value)) {
-            showError(dob, dobError, 'Date of Birth must be in yyyy-mm-dd format');
+    clearError(dobError);
+
+    // Validate date format using regular expression
+    const dobPattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dobPattern.test(dob.value)) {
+        showError(dob, dobError, 'Date of Birth must be in yyyy-mm-dd format');
+        return; // Exit early if date format is invalid
+    }
+
+    // Convert date of birth to a Date object
+    const dobDate = new Date(dob.value);
+
+    // Validate year range (2005-2023)
+    const currentYear = new Date().getFullYear();
+    if (dobDate.getFullYear() < 2005 || dobDate.getFullYear() > 2023) {
+        showError(dob, dobError, 'Date of Birth must be between 2005 and 2023');
+        return; // Exit early if year is out of range
+    }
+
+    // Calculate age based on date of birth
+    const age = currentYear - dobDate.getFullYear();
+
+    // Validate age (0-18)
+    if (age < 0 || age > 18) {
+        showError(dob, dobError, 'Registration is only allowed for users with age 0-18');
+    }
+});
+     
+
+    gender.addEventListener('change', function () {
+        clearError(genderError);
+        const selectedGender = gender.value;
+        if (selectedGender !== 'male' && selectedGender !== 'female' && selectedGender !== 'other') {
+            showError(gender, genderError, 'Please select a valid gender');
         }
     });
+    
 
-    role.addEventListener('input', function () {
-        clearError(roleError);
-        if (role.value === '') {
-            showError(role, roleError, 'Please select a role');
-        }
-    });
-
+    
     password.addEventListener('input', function () {
         clearError(passwordError);
         const passwordPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{8,}$/;
@@ -243,21 +291,18 @@
         }
     });
 
-    confirmPassword.addEventListener('input', function () {
-        clearError(confirmPasswordError);
+    confirm_Password.addEventListener('input', function () {
+        clearError(confirm_PasswordError);
         if (password.value !== confirmPassword.value) {
-            showError(confirmPassword, confirmPasswordError, 'Passwords do not match');
+            showError(confirm_Password, confirm_PasswordError, 'Passwords do not match');
         }
     });
 
-    signupForm.addEventListener('submit', function (e) {
-        if (fnameError.textContent || lnameError.textContent || emailError.textContent ||
-            phoneError.textContent || dobError.textContent || roleError.textContent ||
-            passwordError.textContent || confirmPasswordError.textContent) {
-            e.preventDefault();
-        }
-    });
+    
 
+      
+    
+    
     </script>
 </body>
 </html>

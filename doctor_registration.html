@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Doctor</title>
+    <title>Doctor Registration</title>
     <style>
         /* Global Styles */
         body {
@@ -15,7 +15,7 @@
 
         /* Form Container Styles */
         .form-container {
-            max-width: 400px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: #fff;
@@ -25,7 +25,11 @@
 
         h2 {
             text-align: center;
-            background-color: rgb(0, 158, 40); /* Background color for contrast */
+            background-color: rgb(0, 158, 40);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
         }
 
         label {
@@ -39,7 +43,7 @@
         input[type="tel"],
         input[type="date"],
         input[type="file"] {
-            width: 100%;
+            width: 90%;
             padding: 10px;
             margin: 5px 0;
             border: 1px solid #ccc;
@@ -48,6 +52,11 @@
 
         input[type="file"] {
             padding: 5px 0;
+        }
+
+        .error-message {
+            color: #ff0000;
+            font-size: 14px;
         }
 
         button {
@@ -63,6 +72,16 @@
         button:hover {
             background-color: #0056b3;
         }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .grid-item {
+            grid-column: span 1;
+        }
     </style>
 </head>
 <body>
@@ -70,52 +89,71 @@
         <h2>Doctor Registration</h2>
         <form method="post" enctype="multipart/form-data" action="{% url 'doctor_registration' %}" id="addDoctorForm">
             {% csrf_token %}
-            <!-- Personal Information -->
-            <label for="first_name">First Name:</label>
-            <input type="text" id="first_name" name="first_name" required>
-        
-            <label for="last_name">Last Name:</label>
-            <input type="text" id="last_name" name="last_name" required>
-        
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
-        
-            <label for="phone">Phone Number:</label>
-            <input type="tel" id="phone" name="phone" required>
-        
-            <label for="date_of_birth">Date of Birth:</label>
-            <input type="date" id="date_of_birth" name="date_of_birth" required>
-        
-            <label for="specialty">Specialty:</label>
-            <input type="text" id="specialty" name="specialty" required>
-        
-            <!-- License and Certification -->
-            <label for="license_number">License Number:</label>
-            <input type="text" id="license_number" name="license_number" required>
-        
-            <label for="certification">Certification:</label>
-            <input type="text" id="certification" name="certification" required>
-        
+            <div class="grid-container">
+                <div class="grid-item">
+                    <!-- Personal Information -->
+                    <label for="first_name">First Name:</label>
+                    <input type="text" id="first_name" name="first_name" required>
+                    <span class="error-message" id="first_nameError"></span>
+                    
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" name="last_name" required>
+                    <span class="error-message" id="last_nameError"></span>
+                    
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                    <span class="error-message" id="emailError"></span>
+                    
+                    <label for="phone">Phone Number:</label>
+                    <input type="tel" id="phone" name="phone" required>
+                    <span class="error-message" id="phoneError"></span>
+                    
+                    <label for="date_of_birth">Date of Birth:</label>
+                    <input type="date" id="date_of_birth" name="date_of_birth" required>
+                    <span class="error-message" id="date_of_birthError"></span>
+                </div>
+                <div class="grid-item">
+                    <!-- Specialty and License -->
+                    <label for="specialty">Specialty:</label>
+                    <input type="text" id="specialty" name="specialty" required>
+                    <span class="error-message" id="specialtyError"></span>
+                    
+                    <label for="license_number">License Number:</label>
+                    <input type="text" id="license_number" name="license_number" required>
+                    <span class="error-message" id="license_numberError"></span>
+                    
+                    <label for="certification">Certification:</label>
+                    <input type="text" id="certification" name="certification" required>
+                    <span class="error-message" id="certificationError"></span>
+                </div>
+            </div>
             <!-- Documents -->
             <label for="resume">Upload Resume:</label>
             <input type="file" id="resume" name="resume">
-        
+            
             <label for="license_copy">Upload License Copy:</label>
             <input type="file" id="license_copy" name="license_copy">
-        
+            
             <label for="photo">Upload Photo:</label>
             <input type="file" id="photo" name="photo" required>
-        
+            
+            <!-- Error Messages -->
+            <div class="grid-container">
+                <div class="grid-item">
+                    <span class="error-message" id="resumeError"></span>
+                    <span class="error-message" id="license_copyError"></span>
+                    <span class="error-message" id="photoError"></span>
+                </div>
+            </div>
+            
             <button type="submit">Register</button>
         </form>
-        
     </div>
-
 
     <script>
         const form = document.getElementById("addDoctorForm");
 
-        form.addEventListener("submit", function (event) {
+        form.addEventListener("input", function (event) {
             // Reset error messages
             const errorMessages = document.getElementsByClassName("error-message");
             for (let i = 0; i < errorMessages.length; i++) {
@@ -285,6 +323,5 @@
             return true;
         }
     </script>
-
 </body>
 </html>

@@ -323,6 +323,7 @@
                 <th>Patient</th>
                 <th>Phone</th>
                 <th>Comments</th>
+                <th>status</th>
             </tr>
         </thead>
         <tbody>
@@ -334,6 +335,7 @@
                     <td>{{ appointment.user.first_name }} {{ appointment.user.last_name }}</td>
                     <td>{{ appointment.user.phone }}</td>
                     <td>{{ appointment.comments }}</td>
+                    <td>pending</td>
                 </tr>
             {% endfor %}
         </tbody>

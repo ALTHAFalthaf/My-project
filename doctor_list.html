@@ -48,7 +48,7 @@
                 <a href="">
                   <i class="fa fa-phone" aria-hidden="true"></i>
                   <span>
-                    Call : +01 123455678990
+                    Call : +918078764190
                   </span>
                 </a>
                 <a href="">
@@ -87,8 +87,17 @@
                      
                     .
                       <li class="nav-item">
-                        <a class="nav-link" href="contact.html">Contact Us</a>
+                        <a class="nav-link" href="{% url 'contact' %}">Contact Us</a>
                       </li>
+                      <li>
+                                                
+                  <div class="search_bar" style="margin-top: 20px; text-align: center;">
+                   <form id="doctorSearchForm" style="display: flex; justify-content: center; align-items: center;">
+                      <input type="text" id="doctorSearchInput" placeholder="Search for a doctor..." style="padding: 10px; border: 1px solid #007BFF; border-radius: 5px; margin-right: 10px; width: 300px;">
+                      <button type="button" onclick="searchDoctors()" style="background-color: #007BFF; color: #fff; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s;">Search</button>
+                    </form>
+                   </div>
+
                     </li>
                     </ul>
                   </div>
@@ -103,6 +112,9 @@
             </div>
           </div>
         </header>
+
+
+
 
 
        <!-- start doctor section -->
@@ -219,7 +231,31 @@
   <!-- end doctor section -->
 
 
-  
+  <!-- Add this code at the end of the <body> tag, after the doctor section -->
+
+<script>
+  function searchDoctors() {
+      // Get the input value
+      var searchQuery = document.getElementById('doctorSearchInput').value.toLowerCase();
+
+      // Get all doctor boxes
+      var doctorBoxes = document.querySelectorAll('.box');
+
+      // Loop through each doctor box
+      doctorBoxes.forEach(function(doctorBox) {
+          // Get the doctor's name from the box
+          var doctorName = doctorBox.querySelector('h5').innerText.toLowerCase();
+
+          // Show or hide the doctor box based on the search query
+          if (doctorName.includes(searchQuery)) {
+              doctorBox.style.display = 'block';
+          } else {
+              doctorBox.style.display = 'none';
+          }
+      });
+  }
+</script>
+
           
   
 

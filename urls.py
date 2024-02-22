@@ -11,6 +11,21 @@ from .views import appointment_confirmation
 from .views import doctor_appointments,doctor_profile
 
 from .views import check_time_availability
+from .views import payment_success
+from .views import appointment_history
+from .views import contact
+from .views import upload_birth_details
+from .views import birth_details_list
+from .views import view_birth_details
+
+
+
+
+
+
+
+
+
 
 
 
@@ -21,6 +36,7 @@ from django.contrib.auth.views import PasswordResetView,PasswordResetDoneView,Pa
 urlpatterns = [
    path('',views.index,name='index'),
    path('signup', views.signup, name='signup'),
+   path('signup/healthcare_provider/', views.signup_healthcare_provider, name='signup_healthcare_provider'),
    path('login', views.loginn, name='login'),
    path('homepage/', views.homepage, name='homepage'),
    path('logout', views.user_logout, name='logout'),
@@ -50,15 +66,27 @@ urlpatterns = [
    
    path('vaccination_home/', views.vaccination_home, name='vaccination_home'),
 
+   path('upload-birth-details/', upload_birth_details, name='upload_birth_details'),
+
    path('payment_success/', views.payment_success, name='payment_success'),
+   
 
+   path('appointment_history', appointment_history, name='appointment_history'),
 
+   path('generate_password_provider/<int:provider_id>/', views.generate_password_provider, name='generate_password_provider'),
 
+   path('birth-details/list/', birth_details_list, name='birth_details_list'),
 
+   path('view-birth-details/<int:user_profile_id>/', views.view_birth_details, name='view_birth_details'),
 
+   path('download-csv/', views.download_csv, name='download_csv'),
+
+  
 
    
-  # path('export_vaccine_records_to_excel/', export_vaccine_records_to_excel, name='export_vaccine_records_to_excel'),
+
+
+
 
    
    

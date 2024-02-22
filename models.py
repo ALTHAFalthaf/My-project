@@ -31,11 +31,12 @@ class CustomUser(AbstractUser):
     ADMIN = 'Admin'
     CHILD = 'Child'
     DOCTOR = 'Doctor'
+    HEALTHCARE_PROVIDER = 'HealthcareProvider'  # New role for healthcare providers
     ROLE_CHOICES = [
         (ADMIN, 'Admin'),
         (CHILD, 'Child'),
         (DOCTOR, 'Doctor'),
-        
+        (HEALTHCARE_PROVIDER, 'HealthcareProvider'),  # Add Healthcare Provider to role choices
     ]
 
 
@@ -45,8 +46,9 @@ class CustomUser(AbstractUser):
     )
 
     # Fields for custom user roles
-    role = models.CharField(max_length=15, choices=ROLE_CHOICES, default=CHILD)  # Default role for regular users
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default=CHILD)  # Default role for regular users
     doctor = models.ForeignKey('Doctor', on_delete=models.SET_NULL, null=True, blank=True)
+    provider = models.ForeignKey('HealthcareProvider', on_delete=models.SET_NULL, null=True, blank=True)
     forget_password_token = models.UUIDField(null=True, blank=True) #forgetpass
     email = models.EmailField(unique=True)
     dob = models.DateField(null=True, blank=True)
@@ -57,6 +59,7 @@ class CustomUser(AbstractUser):
     # Define boolean fields for specific roles
     is_child = models.BooleanField(default=True)
     is_doctor = models.BooleanField(default=True)
+    is_healthcare_provider = models.BooleanField(default=True)  # New field to indicate healthcare provider role
     
 
 
@@ -102,113 +105,39 @@ class Appointment(models.Model):
     def __str__(self):
         return f"Appointment with {self.doctor.first_name} {self.doctor.last_name} on {self.appointment_date}"
 
+class HealthcareProvider(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='healthcare_provider_profile', null=True, blank=True)
+    role = models.CharField(max_length=50, null=True, blank=True)
+    first_name = models.CharField(max_length=100, null=True, blank=True)
+    last_name = models.CharField(max_length=100, null=True, blank=True)
+    email = models.EmailField(unique=True)
+    phone= models.CharField(max_length=15, blank=True, null=True)
+    license_number = models.CharField(max_length=100, null=True, blank=True)
+    certification = models.CharField(max_length=100, null=True, blank=True)
+    resume = models.FileField(upload_to='provider/resume/', null=True, blank=True)
+    license_copy = models.FileField(upload_to='provider/license_copy/', null=True, blank=True)
+    photo = models.ImageField(upload_to='provider/photo/', null=True, blank=True)
+    is_verified = models.BooleanField(default=False)
+    # Add more fields as needed
+   
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 
-
-
-
-class VaccinationSchedule(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='vaccinations')
-    vaccine_name = models.CharField(max_length=100)
-    dose_number = models.IntegerField()
-    given_date = models.DateField()
-    next_due_date = models.DateField()
+class BirthDetails(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='user_details',default=1)
+    place_of_birth = models.CharField(max_length=100, null=True, blank=True)
+    weight = models.FloatField(max_length=100, null=True, blank=True)
+    height = models.FloatField(max_length=100, null=True, blank=True)
+    regno = models.CharField(max_length=50, null=True, blank=True)
+    rchid = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user.first_name}'s {self.vaccine_name} - Dose {self.dose_number}"
+        return self.regno
 
 
 
 
 
 
-
-
-
-
-class Record(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    # Add other fields as needed...
-
- 
-
-class RecordView(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    record = models.ForeignKey(Record, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.user.username
-
-TIME = (
-    ('B', 'Birth'),
-    ('6w', '6 weeks (Infants)'),
-    ('10w', '10 weeks (Infants)'),
-    ('14w', '14 weeks (Infants)'),
-    ('6m', '6 moonths (Infants)'),
-    ('9m', '9 months (Infants)'),
-    ('12m', '12-24 months (Infants)'),
-    ('15m', '15-18 months (Infants)'),
-    ('24m', '24 months (Infants)'),
-    ('L', 'Less than 13 years '),
-)
-
-
-class Timing(models.Model):
-    title = models.CharField(max_length=200)
-    age = models.CharField(max_length=30)
-    schedule_done = models.ForeignKey('Schedule', related_name='schedules_done', on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.title
-
-    def __unicode__(self):
-        return
-
-class Immunogen(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    definition = models.CharField(max_length=100, blank=True, null=True)
-    disease_handled = models.CharField(max_length=100, blank=True, null=True)
-
-    def __str__(self):
-        return self.definition
-
-    def __unicode__(self):
-        return 
-    # Your existing Immunogen model...
-
-class Vaccine(models.Model):
-    timing = models.CharField(max_length=20, choices=TIME)
-    imu_id = models.ForeignKey('Immunogen', related_name='imus', on_delete=models.CASCADE)
-    description = models.CharField(max_length=300)
-
-    def __str__(self):
-        return self.imu_id.definition
-
-    def get_absolute_url(self):
-        return reverse('detail-vaccine', kwargs={'pk': self.pk})
-
-    @property
-    def usage(self):
-        return self.schedule_set.count()
-
-class Schedule(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    record = models.ForeignKey(Record, related_name='schedules', on_delete=models.CASCADE)
-    date_immunized = models.DateTimeField(default=timezone.now)
-    vaccine_type = models.ForeignKey(Vaccine, related_name='vaccines', on_delete=models.CASCADE)
-    active = models.BooleanField(default=True)
-    exp_date = models.DateTimeField(blank=True, null=True)
-    
-
-    def __str__(self):
-        return self.vaccine_type.imu_id.name
-
-    def get_update_url(self):
-        return reverse('schedule-update', kwargs={'pk': self.pk})
-
-    def get_absolute_url(self):
-        return reverse('schedule-detail', kwargs={'pk': self.pk})
-
-    def get_delete_url(self):
-        return reverse('schedule-delete', kwargs={'pk': self.pk})

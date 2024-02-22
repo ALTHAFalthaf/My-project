@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Birth Details</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        max-width: 600px;
+        margin: 50px auto;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            display: block;
+    }
+    h2 {
+        text-align: center;
+        color: #333;
+    }
+    label {
+        font-weight: bold;
+        color: #555;
+    }
+    input[type="text"], input[type="date"], select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="%23333" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+    }
+    input[type="submit"] {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 12px 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+    }
+    input[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Upload Birth Details</h2>
+
+    
+    
+    <form id="birthDetailsForm" action="#" method="post">
+        {% csrf_token %}
+        <label for="child_name">Child's Name:</label>
+        <input type="text" id="child_name" name="child_name" value="{{ child_namea }}{{ child_nameb }}" required>
+
+        <label for="date_of_birth">Date of Birth:</label>
+        <input type="text" id="date_of_birth" name="date_of_birth" value="{{ date_of_birth }}" required>
+
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender" required>
+            <option value="">Select Gender</option>
+            <option value="male" {% if gender == 'male' %} selected {% endif %}>Male</option>
+            <option value="female" {% if gender == 'female' %} selected {% endif %}>Female</option>
+            <option value="other" {% if gender == 'other' %} selected {% endif %}>Other</option>
+        </select>
+
+        <label for="place_of_birth">Place of Birth:</label>
+        <input type="text" id="place_of_birth" name="place_of_birth" required>
+        <span id="placeOfBirthError" class="error-message"></span>
+
+        <label for="weight">Weight at Birth (in kg):</label>
+        <input type="text" id="weight" name="weight" required>
+        <span id="weightError" class="error-message"></span>
+
+        <label for="height">Height at Birth (in cm):</label>
+        <input type="text" id="height" name="height" required>
+        <span id="heightError" class="error-message"></span>
+
+        <label for="regno">Child Registration No:</label>
+        <input type="text" id="regno" name="regno" required>
+        <span id="regnoError" class="error-message"></span>
+
+        <label for="rchid">Child RCH ID:</label>
+        <input type="text" id="rchid" name="rchid" required>
+        <span id="rchidError" class="error-message"></span>
+
+        <input type="submit" value="Submit" onclick="submitForm(event)">
+    </form>
+</div>
+
+
+
+<script>
+    // Add event listener for form submission
+    document.getElementById('birthDetailsForm').addEventListener('submit', function(event) {
+        // Validate each field before form submission
+        if (!validatePlaceOfBirth()) {
+            document.getElementById('placeOfBirthError').innerText = 'Please enter a valid place of birth.';
+            event.preventDefault();
+        }
+        if (!validateWeight()) {
+            document.getElementById('weightError').innerText = 'Please enter a valid weight.';
+            event.preventDefault();
+        }
+        if (!validateHeight()) {
+            document.getElementById('heightError').innerText = 'Please enter a valid height.';
+            event.preventDefault();
+        }
+        if (!validateRegno()) {
+            document.getElementById('regnoError').innerText = 'Please enter a valid registration number.';
+            event.preventDefault();
+        }
+        if (!validateRchid()) {
+            document.getElementById('rchidError').innerText = 'Please enter a valid RCH ID.';
+            event.preventDefault();
+        }
+    });
+
+    // Validation functions for each field
+    // These functions are called on keyup event for real-time validation
+    document.getElementById('place_of_birth').addEventListener('keyup', function() {
+        validatePlaceOfBirth();
+    });
+
+    document.getElementById('weight').addEventListener('keyup', function() {
+        validateWeight();
+    });
+
+    document.getElementById('height').addEventListener('keyup', function() {
+        validateHeight();
+    });
+
+    document.getElementById('regno').addEventListener('keyup', function() {
+        validateRegno();
+    });
+
+    document.getElementById('rchid').addEventListener('keyup', function() {
+        validateRchid();
+    });
+
+    // Validation functions
+    function validatePlaceOfBirth() {
+        var placeOfBirth = document.getElementById('place_of_birth').value.trim();
+        var errorSpan = document.getElementById('placeOfBirthError');
+        if (placeOfBirth === '') {
+            errorSpan.innerText = 'Please enter a valid place of birth.';
+            return false;
+        } else {
+            errorSpan.innerText = '';
+            return true;
+        }
+    }
+
+    function validateWeight() {
+    var weight = document.getElementById('weight').value.trim();
+    var errorSpan = document.getElementById('weightError');
+    var minWeight = 1; // Minimum acceptable weight in kg
+    var maxWeight = 5; // Maximum acceptable weight in kg
+
+    if (isNaN(weight) || parseFloat(weight) < minWeight || parseFloat(weight) > maxWeight) {
+        errorSpan.innerText = 'Please enter a valid weight between ' + minWeight + ' and ' + maxWeight + ' kg.';
+        return false;
+    } else {
+        errorSpan.innerText = '';
+        return true;
+    }
+}
+
+function validateHeight() {
+    var height = document.getElementById('height').value.trim();
+    var errorSpan = document.getElementById('heightError');
+    var minHeight = 40; // Minimum acceptable height in cm
+    var maxHeight = 60; // Maximum acceptable height in cm
+
+    if (isNaN(height) || parseFloat(height) < minHeight || parseFloat(height) > maxHeight) {
+        errorSpan.innerText = 'Please enter a valid height between ' + minHeight + ' and ' + maxHeight + ' cm.';
+        return false;
+    } else {
+        errorSpan.innerText = '';
+        return true;
+    }
+}
+
+
+function validateRegno() {
+    var regno = document.getElementById('regno').value.trim();
+    var errorSpan = document.getElementById('regnoError');
+    var regnoRegex = /^[A-Za-z0-9]{6}$/; // Regex pattern for valid registration number (6 alphanumeric characters)
+
+    if (!regnoRegex.test(regno)) {
+        errorSpan.innerText = 'Please enter a valid 6-digit registration number.';
+        return false;
+    } else {
+        errorSpan.innerText = '';
+        return true;
+    }
+}
+
+function validateRchid() {
+    var rchid = document.getElementById('rchid').value.trim();
+    var errorSpan = document.getElementById('rchidError');
+    var rchidRegex = /^[0-9]{6}$/; // Regex pattern for valid RCH ID (6 digits)
+
+    if (!rchidRegex.test(rchid)) {
+        errorSpan.innerText = 'Please enter a valid 6-digit RCH ID.';
+        return false;
+    } else {
+        errorSpan.innerText = '';
+        return true;
+    }
+}
+
+function submitForm(event) {
+    event.preventDefault(); // Prevent the default form submission
+    
+    // Submit the form using AJAX
+    var form = document.getElementById('birthDetailsForm');
+    var formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message); // Display success message in popup
+            window.location.href = data.redirect_url; // Redirect to the success page
+        } else {
+            alert(data.message); // Display error message in popup
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+</script>
+
+
+</body>
+</html>

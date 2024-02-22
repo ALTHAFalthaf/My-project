@@ -54,6 +54,8 @@ from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist 
 from .models import Appointment
 from .models import Doctor
+from .models import HealthcareProvider
+
 
 # from .helpers import send_forget_password_mail
 # from .forms import PatientProfileForm
@@ -71,7 +73,6 @@ def homepage(request):
         return response
     else:
         return redirect('login')
-
 
 
 def about(request):
@@ -92,9 +93,9 @@ def doctor_added(request):
 
 
 
-
 def view_doctor(request):
     return render(request, 'view_doctor.html')  # Display the success page
+
 
 def doctor_list(request):
     doctors = Doctor.objects.all()
@@ -107,6 +108,7 @@ def doctor_list(request):
 
 def myprofile(request):
     return render(request, 'myprofile.html')
+
 
 def editprofile(request):
     if request.method == "POST":
@@ -152,6 +154,7 @@ def loginn(request):
                             return redirect('doctor_home')
                         else:
                             return redirect('homepage')
+                        
                 else:
                     error_message = "Invalid credentials"
                     messages.error(request, error_message)
@@ -169,7 +172,7 @@ def loginn(request):
     return response
     # return render(request,'login.html')
 
-
+@login_required
 def signup(request):
     if request.method == "POST":
         firstname=request.POST.get('fname') 
@@ -195,6 +198,7 @@ def signup(request):
             return redirect("login")
     return render(request,'signup.html')
 
+@login_required
 def user_logout(request):
     try:
         del request.session['email']
@@ -213,6 +217,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.shortcuts import get_object_or_404
 from .models import CustomUser
+from django.contrib.auth.decorators import login_required
 from django.template.loader import render_to_string
 from django.conf import settings
 
@@ -276,7 +281,7 @@ def send_registration_email(request):
         messages.success(request, f'Registration email sent to {email}')
         return redirect('adminreg')
 
-
+@login_required
 def adminreg(request):
     User = get_user_model()
     
@@ -298,8 +303,10 @@ def adminreg(request):
                 doctors = Doctor.objects.filter(approved=False)
                 approved_doctors = Doctor.objects.filter(approved=True)
                 appointments = Appointment.objects.all()
+                providers = HealthcareProvider.objects.all()
+                birth_details = BirthDetails.objects.all()
 
-                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,'appointments': appointments}
+                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,'appointments': appointments,'providers': providers,'birth_details': birth_details}
                 return render(request, 'adminreg.html', context)
             else:
                 messages.error(request, "You don't have permission to access this page.")
@@ -455,7 +462,7 @@ def book_appointment(request, doctor_id):
 
             # Add any additional logic here (e.g., send confirmation email)
 
-            messages.success(request, 'Appointment booked successfully!')
+            
             return redirect('appointment_confirmation', appointment_id=appointment.id)  # You can redirect to a success page or any other page
 
         return render(request, 'book_appointment.html', {'doctor': doctor, 'user': request.user})
@@ -470,6 +477,7 @@ from .models import Appointment
 import razorpay
 from django.views.decorators.csrf import csrf_exempt
 
+@login_required
 def appointment_confirmation(request, appointment_id):
     amount_in_paise = int(500 * 100)
     
@@ -486,9 +494,15 @@ def appointment_confirmation(request, appointment_id):
     client = razorpay.Client(auth=("rzp_test_EZL2rQubxJwxrv","RhRefR6hrzAdlzxNVUm6s4Ja"))
     payment = client.order.create(data=DATA)
 
+     # Assuming you have a variable indicating payment success
+    payment_success = True  # Adjust this based on your payment logic
+
     context = {
         'amount': amount_in_paise,
-        'payment': payment
+        'payment': payment,
+        
+        
+        
     }
 
     try:
@@ -628,6 +642,11 @@ def vaccination_home(request):
 
 
 
+
+
+
+
+
 #payment
 
 from django.views.decorators.csrf import csrf_exempt
@@ -640,71 +659,184 @@ def payment_success(request):
 
 
 
+from django.shortcuts import render
+from .models import Appointment
+
+def appointment_history(request):
+    # Retrieve all appointments and sort them by date
+    appointments = Appointment.objects.all().order_by('appointment_date')
+
+    # Pass the sorted appointments to the template
+    return render(request, 'appointment_history.html', {'appointments': appointments})
 
 
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import HealthcareProvider
+
+def signup_healthcare_provider(request):
+    if request.method == 'POST':
+        # Retrieve form data
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        license_number = request.POST.get('license_number')
+        certification = request.POST.get('certification')
+        resume = request.FILES.get('resume')
+        license_copy = request.FILES.get('license_copy')
+        photo = request.FILES.get('photo')
+
+        try:
+            # Create and save the HealthcareProvider instance
+            provider = HealthcareProvider.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                phone=phone,  # Assuming 'phone' is the field name in the model
+                license_number=license_number,
+                certification=certification,
+                resume=resume,
+                license_copy=license_copy,
+                photo=photo
+            )
+            messages.success(request, 'Healthcare provider added successfully.')
+            return redirect('adminreg')  # Redirect to success page
+        except Exception as e:
+            messages.error(request, f'Error: {e}')
+
+    return render(request, 'signup_healthcare_provider.html')  # Replace 'your_template.html' with your actual template name
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#vaccine_record
 
 # views.py
-#import pandas as pd
-#from django.http import HttpResponse
-#from io import BytesIO
-#from .models import VaccineRecord
 
-#def export_vaccine_records_to_excel(request):
-    # Assuming you have a VaccineRecord model
-   # vaccine_records = VaccineRecord.objects.all()
+from django.contrib.auth import get_user_model
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
-    # Create a DataFrame from the queryset
-   # data = {
-     #   'Child Name': [record.child.first_name for record in vaccine_records],
-     #   'Vaccine Name': [record.vaccine.name for record in vaccine_records],
-      #  'Administration Date': [record.administration_date for record in vaccine_records],
-      #  'Administered By': [record.administered_by.first_name if record.administered_by else 'N/A' for record in vaccine_records],
-      #  'Comments': [record.comments for record in vaccine_records],
-  #  }
+from .models import HealthcareProvider
 
-   # df = pd.DataFrame(data)
+User = get_user_model()
 
-    # Create an in-memory Excel file
-  #  excel_file = BytesIO()
-  #  with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
-  #      df.to_excel(writer, index=False, sheet_name='Vaccine Records')
+def generate_password_provider(request, provider_id):
+    if request.method == 'POST':
+        # Retrieve the healthcare provider from the database
+        provider = HealthcareProvider.objects.get(id=provider_id)
 
-    # Move the buffer's position to the beginning for reading
- #   excel_file.seek(0)
+        # Check if the email is unique
+        try:
+            user = User.objects.get(email=provider.email)
+            messages.error(request, 'Email already in use by another user.')
+        except User.DoesNotExist:
+            # Create a new user (healthcare provider) with the provider's details
+            user = User(
+                first_name=provider.first_name,
+                last_name=provider.last_name,
+                email=provider.email,
+                phone=provider.phone,
+                role='Healthcare Provider',  # Make sure to set the appropriate role
+            )
 
-    # Create a response with the Excel file
-   # response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-   # response['Content-Disposition'] = 'attachment; filename=vaccine_records.xlsx'
+            # Generate a password (replace with your password generation logic)
+            password = 'Qwer123@'
+            user.set_password(password)
+            user.save()
+            
+            # Update the 'is_verified' status for the healthcare provider
+            provider.is_verified = True
+            provider.save()
 
-   # return response
+            # Send an email with the generated password
+            subject = 'Your Healthcare Provider Account Password'
+            message = render_to_string('password_email.html', {'password': password})
+            from_email = 'kiddoguard12@gmail.com'  # Replace with your email address
+            recipient_list = [provider.email]
 
+            send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+
+            messages.success(request, 'Healthcare provider approved and password set.')
+
+    return redirect('adminreg')
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import BirthDetails
+
+@login_required
+def upload_birth_details(request):
+    if request.method == 'POST':
+        # Get the form data
+        place_of_birth = request.POST.get('place_of_birth')
+        weight = request.POST.get('weight')
+        height = request.POST.get('height')
+        regno = request.POST.get('regno')
+        rchid = request.POST.get('rchid')
+
+        # Check if the user is authenticated and is a CustomUser instance
+        if request.user.is_authenticated:
+            user = request.user
+
+            # Check if the user already has birth details
+            existing_birth_details = BirthDetails.objects.filter(user=user)
+            if existing_birth_details.exists():
+                message = 'Birth details already exist for this user.'
+                return JsonResponse({'success': False, 'message': message})
+                return redirect('birth_details_list')  # Redirect to the birth details list page
+            else:
+                # Create new birth details
+                birth_details = BirthDetails.objects.create(
+                    user=user,
+                    place_of_birth=place_of_birth,
+                    weight=weight,
+                    height=height,
+                    regno=regno,
+                    rchid=rchid
+                )
+                message = 'Birth details uploaded successfully.'
+                birth_details_list_url = reverse('birth_details_list')  # Get URL of birth_details_list page
+                return JsonResponse({'success': True, 'message': message, 'redirect_url': birth_details_list_url})
+        else:
+            messages.error(request, 'Authentication error: Please log in with a valid user account.')
+            return redirect('login')  # Redirect to the login page if the user is not authenticated
+
+    try:
+        # Fetch additional user details for pre-filling the form
+        user_details = request.user
+        child_namea = user_details.first_name
+        child_nameb = user_details.last_name
+        date_of_birth = user_details.dob
+        gender = user_details.gender
+
+        # Pass user details to the template
+        context = {
+            'user': request.user,
+            'child_namea': child_namea,
+            'child_nameb': child_nameb,
+            'date_of_birth': date_of_birth,
+            'gender': gender
+        }
+
+    except CustomUser.DoesNotExist:
+        messages.error(request, 'User details not found.')
+        return redirect('birth_details_error')  # Redirect to an error page or any other page
+
+    return render(request, 'upload_birth_details.html', context)
+
+
+
+
+
+from django.shortcuts import render, get_object_or_404
+from .models import BirthDetails, CustomUser
+
+def view_birth_details(request, user_id):
+    user_profile = get_object_or_404(CustomUser, id=user_id)
+    birth_details = BirthDetails.objects.filter(user=user_profile)
+    return render(request, 'birth_details.html', {'user_profile': user_profile, 'birth_details': birth_details})
 
 
 
@@ -712,6 +844,30 @@ def payment_success(request):
 
 
     
+    
+from django.shortcuts import render
+
+def birth_details_list(request):
+     return render(request, 'birth_details_list.html')
+
+import csv
+from django.http import HttpResponse
+from .models import BirthDetails
+
+def download_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="birth_details.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Child Name', 'Date of Birth', 'Gender', 'Place of Birth', 'Weight', 'Height', 'Registration No', 'RCH ID'])
+
+    birth_details = BirthDetails.objects.all()
+    for detail in birth_details:
+         writer.writerow([detail.user.first_name, detail.user.dob, detail.user.gender, detail.place_of_birth, detail.weight, detail.height, detail.regno, detail.rchid])
+
+    return response
+
+
 
 
 

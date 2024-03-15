@@ -97,6 +97,11 @@ def view_doctor(request):
     return render(request, 'view_doctor.html')  # Display the success page
 
 
+
+def company_home(request):
+    return render(request, 'company_home.html')
+
+
 def doctor_list(request):
     doctors = Doctor.objects.all()
     context = {'doctors': doctors}
@@ -146,6 +151,11 @@ def loginn(request):
                         request.session['email'] = email
                         auth_login(request, user)
                         return redirect('adminreg')
+                    elif user.role == 'Company':
+                        # Company login
+                        request.session['email'] = email
+                        auth_login(request, user)
+                        return redirect('company_home') 
                     else:
                         request.session['email'] = email
                         auth_login(request, user)
@@ -266,8 +276,10 @@ from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
+from django.contrib.auth.decorators import user_passes_test
 from .models import Doctor
 from .models import Appointment 
+from .models import Company
 
 def send_registration_email(request):
     if request.method == 'POST':
@@ -282,6 +294,7 @@ def send_registration_email(request):
         return redirect('adminreg')
 
 @login_required
+@user_passes_test(lambda u: u.role == 'Admin', login_url='login')
 def adminreg(request):
     User = get_user_model()
     
@@ -305,8 +318,9 @@ def adminreg(request):
                 appointments = Appointment.objects.all()
                 providers = HealthcareProvider.objects.all()
                 birth_details = BirthDetails.objects.all()
+                companies = Company.objects.all()
 
-                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,'appointments': appointments,'providers': providers,'birth_details': birth_details}
+                context = {'user_profiles': user_profiles, 'doctors': doctors, 'approved_doctors': approved_doctors,'appointments': appointments,'providers': providers,'birth_details': birth_details,'companies':companies}
                 return render(request, 'adminreg.html', context)
             else:
                 messages.error(request, "You don't have permission to access this page.")
@@ -761,6 +775,25 @@ def generate_password_provider(request, provider_id):
 
     return redirect('adminreg')
 
+
+from django.contrib import messages
+from django.shortcuts import redirect, get_object_or_404
+from .models import Company
+
+def approve_company(request, company_id):
+    company = get_object_or_404(Company, pk=company_id)
+    company.is_verified = True
+    company.status = 'Approved'  # Assuming 'status' is the field representing the status
+    company.save()
+    messages.success(request, 'Company approved successfully.')
+    return redirect('adminreg')  # Redirect to wherever you want
+
+
+
+
+
+
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -866,6 +899,433 @@ def download_csv(request):
          writer.writerow([detail.user.first_name, detail.user.dob, detail.user.gender, detail.place_of_birth, detail.weight, detail.height, detail.regno, detail.rchid])
 
     return response
+
+
+
+
+# import pandas as pd
+# import os
+# from django.conf import settings
+# from django.http import HttpResponse
+# from .models import Vaccine
+
+
+
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from .models import Vaccine
+import pandas as pd
+from django.contrib import messages
+from django.conf import settings
+
+def upload_excel(request):
+    if request.method == 'POST' and request.FILES['excel_file']:
+        excel_file = request.FILES['excel_file']
+
+        # Check if the data has already been loaded
+        if not settings.VACCINES_DATA_LOADED:
+            try:
+                # Read the Excel file into a pandas DataFrame
+                excel_data = pd.read_excel(excel_file)
+                
+                # Iterate over DataFrame rows and create Vaccine instances
+                for index, row in excel_data.iterrows():
+                    vaccine = Vaccine(
+                        name=row['Vaccine name'],
+                        edition_date=row['Edition Date'],
+                        edition_status=row['Edition Status'],
+                        last_updated_date=row['Last Updated Date'],
+                        price=row['price']  # Modify this according to your Excel column name
+                    )
+                    vaccine.save()
+
+                # Set the flag to indicate that the data has been loaded
+                settings.VACCINES_DATA_LOADED = True
+               
+                message = "Vaccines loaded successfully."
+                return render(request, 'upload_excel.html', {'message': message, 'alert_type': 'success'})
+            except Exception as e:
+                message = "An error occurred: " + str(e)
+                return render(request, 'upload_excel.html', {'message': message, 'alert_type': 'danger'})
+        else:
+            message = "Vaccines already loaded."
+            return render(request, 'upload_excel.html', {'message': message, 'alert_type': 'warning'})
+    else:
+        return render(request, 'upload_excel.html')
+
+
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from decimal import Decimal
+from .models import Vaccine, Company, CartItem
+
+
+@login_required
+def view_available_vaccines(request):
+    user = request.user
+    if user.is_admin:  # Assuming you have a field 'is_admin' in your CustomUser model
+        # Admin can view all available vaccines
+        vaccines = Vaccine.objects.all()
+        return render(request, 'view_available_vaccines.html', {'vaccines': vaccines})
+    elif user.company:
+        # Users associated with a company can view available vaccines
+        vaccines = Vaccine.objects.all()
+        return render(request, 'view_available_vaccines.html', {'vaccines': vaccines})
+    else:
+        # Users not associated with any company are not authorized to view vaccines
+        messages.error(request, 'You are not associated with a licensed company.')
+        return redirect('home')  # Redirect to home page or any other appropriate page
+
+
+
+
+def add_to_cart(request, vaccine_id):
+    vaccine = get_object_or_404(Vaccine, pk=vaccine_id)
+    if request.method == 'POST':
+        quantity = int(request.POST.get('quantity', 1))
+        user = request.user
+        # Create or update the cart item for the user and vaccine
+        cart_item, created = CartItem.objects.get_or_create(user=user, vaccine=vaccine)
+        cart_item.quantity += quantity
+        cart_item.save()
+        return redirect('view_cart')
+    return render(request, 'add_to_cart.html', {'vaccine': vaccine})
+ 
+
+
+def update_cart(request):
+    if request.method == 'POST':
+        vaccine_id = request.POST.get('vaccine_id')
+        action = request.POST.get('action')
+
+        # Retrieve the cart item from the database
+        cart_item = get_object_or_404(CartItem, vaccine__id=vaccine_id, user=request.user)
+
+        # Update the quantity based on the action
+        if action == 'increment':
+            cart_item.quantity += 1
+        elif action == 'decrement':
+            if cart_item.quantity > 1:
+                cart_item.quantity -= 1
+            else:
+                # If quantity is already 1, delete the cart item
+                cart_item.delete()
+
+        # Save the updated cart item
+        cart_item.save()
+
+    return redirect('view_cart')
+
+def remove_from_cart(request):
+    if request.method == 'POST':
+        # Retrieve the vaccine ID from the form data
+        vaccine_id = request.POST.get('vaccine_id')
+
+        # Retrieve the corresponding cart item from the database
+        cart_item = get_object_or_404(CartItem, vaccine_id=vaccine_id, user=request.user)
+
+        # Remove the cart item from the cart
+        cart_item.delete()
+
+        messages.success(request, "Item removed from the cart successfully.")
+        return redirect('view_cart')  # Redirect back to the cart page
+    else:
+        # If the request method is not POST, redirect to a suitable page
+        return redirect('view_cart')  # Redirect to the cart page or another page as needed
+
+
+def delete_vaccine(request, vaccine_id):
+    # Retrieve the vaccine object
+    vaccine = get_object_or_404(Vaccine, pk=vaccine_id)
+    
+    # Check if the requesting user is a company user
+    if request.user.company:
+        # Delete the vaccine
+        vaccine.delete()
+        messages.success(request, 'Vaccine deleted successfully.')
+    else:
+        # If the user is not a company user, display an error message
+        messages.error(request, 'You are not authorized to delete vaccines.')
+    
+    # Redirect back to the view_available_vaccine page or any other appropriate page
+    return redirect('view_available_vaccines')
+
+
+
+
+def view_cart(request):
+    user = request.user
+    cart_items = CartItem.objects.filter(user=user)
+    total_price = Decimal(0)  # Initialize total price as Decimal
+    for cart_item in cart_items:
+        total_price += cart_item.subtotal
+    return render(request, 'view_cart.html', {'cart_items': cart_items, 'total_price': total_price})
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Vaccine, Checkout, CartItem, CheckoutItem
+from decimal import Decimal
+import razorpay
+
+@login_required
+def checkout(request):
+    if request.method == 'POST':
+        # Retrieve the user's cart items
+        cart_items = CartItem.objects.filter(user=request.user)
+        
+        # Calculate total price
+        total_price = sum(item.subtotal for item in cart_items)
+
+        # Extract shipping information from the form
+        full_name = request.POST.get('full_name')
+        address_line_1 = request.POST.get('address_line_1')
+        address_line_2 = request.POST.get('address_line_2', '')  # Optional field
+        city = request.POST.get('city')
+        state = request.POST.get('state')
+        pin_code = request.POST.get('pin_code')
+        phone_number = request.POST.get('phone_number')
+
+        # Save checkout information
+        checkout = Checkout.objects.create(
+            user=request.user,
+            full_name=full_name,
+            address_line_1=address_line_1,
+            address_line_2=address_line_2,
+            city=city,
+            state=state,
+            pin_code=pin_code,
+            phone_number=phone_number
+        )
+
+        for item in cart_items:
+            CheckoutItem.objects.create(
+                checkout=checkout,
+                vaccine=item.vaccine,
+                quantity=item.quantity,
+                subtotal=item.subtotal
+            )
+
+        # Clear the user's cart after checkout
+        cart_items.delete()
+
+        # Redirect to a thank you page or order summary page
+        return redirect('order_confirm', checkout_id=checkout.id)  # Replace 'order_summary' with your actual view name
+    else:
+        # If the request method is GET, retrieve cart items and calculate total price
+        cart_items = CartItem.objects.filter(user=request.user)
+        total_price = sum(item.subtotal for item in cart_items)
+
+        # Pass cart items and total price to the template
+        context = {
+            'cart_items': cart_items,
+            'total_price': total_price,
+        }
+
+        return render(request, 'checkout.html', context)
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from .models import Checkout, CheckoutItem
+
+def order_confirm(request, checkout_id):
+    try:
+        # Retrieve the checkout information using the provided checkout_id
+        checkout = get_object_or_404(Checkout, pk=checkout_id)
+
+        # Retrieve checkout items associated with the checkout
+        checkout_items = checkout.items.all()
+
+        # Calculate total price from checkout items
+        total_price = sum(item.subtotal for item in checkout_items)
+
+        context = {
+            'checkout': checkout,
+            'checkout_items': checkout_items,
+            'total_price': total_price,
+        }
+        return render(request, 'order_confirm.html', context)
+    except Checkout.DoesNotExist:
+        messages.error(request, "No checkout information found. Please complete the checkout process first.")
+        return redirect('view_cart')  # Redirect to the cart page
+        
+
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Vaccine, Checkout, CartItem, CheckoutItem
+from decimal import Decimal
+import razorpay
+
+@login_required
+def process_payment(request):
+    if request.method == 'POST':
+        # Retrieve the user's cart items
+        cart_items = CartItem.objects.filter(user=request.user)
+        
+        # Calculate total price
+        total_price = sum(item.subtotal for item in cart_items)
+
+        # Initialize Razorpay client
+        client = razorpay.Client(auth=("rzp_test_EZL2rQubxJwxrv", "RhRefR6hrzAdlzxNVUm6s4Ja")) 
+
+        # Convert total price to paise
+        amount_in_paise = int(total_price * 100)
+
+        # Create payment order
+        data = {
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "receipt": "vaccine_order",
+            "notes": {
+                "description": "Payment for vaccine purchase"
+            }
+        }
+
+        try:
+            payment = client.order.create(data=data)
+
+            # Render the checkout page with payment details
+            return render(request, 'process_payment.html', {'amount': amount_in_paise, 'payment': payment})
+
+        except Exception as e:
+            # Handle payment processing errors
+            messages.error(request, f"Payment processing error: {str(e)}")
+            return redirect('view_cart')
+
+    else:
+        # If request method is not POST, redirect to the cart
+        return redirect('view_cart')
+
+
+
+    
+
+
+
+
+
+
+
+def purchase_success(request):
+    return render(request, 'purchase_success.html')
+
+
+
+# views.py
+from django.shortcuts import render, redirect
+from .models import Company
+
+def register_company(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        license_number = request.POST.get('license_number')
+        address = request.POST.get('address')
+        contact_email = request.POST.get('contact_email')
+        contact_phone = request.POST.get('contact_phone')
+        Company.objects.create(
+            name=name,
+            license_number=license_number,
+            address=address,
+            contact_email=contact_email,
+            contact_phone=contact_phone
+        )
+        return redirect('adminreg')
+    return render(request, 'register_company.html')
+
+# def company_list(request):
+#     companies = Company.objects.all()
+#     return render(request, 'company_list.html', {'companies': companies})
+
+
+from django.contrib.auth import get_user_model
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+
+from .models import Company  # Import the Company model
+
+User = get_user_model()
+
+def generate_password_company(request, company_id):
+    if request.method == 'POST':
+        # Retrieve the company from the database
+        company = Company.objects.get(id=company_id)
+
+        # Check if the email is unique
+        try:
+            user = User.objects.get(email=company.contact_email)
+            messages.error(request, 'Email already in use by another user.')
+        except User.DoesNotExist:
+            # Create a new user (company) with the company's details
+            user = User(
+                first_name=company.name,  # Use company name as first name
+                email=company.contact_email,
+                phone=company.contact_phone,
+                role='Company',  # Make sure to set the appropriate role
+            )
+
+            # Generate a password (replace with your password generation logic)
+            password = 'Qwer123@'
+            user.set_password(password)
+            user.save()
+
+            # Send an email with the generated password
+            subject = 'Your Company Account Password'
+            message = render_to_string('password_email.html', {'password': password})
+            from_email = 'kiddoguard12@gmail.com'  # Replace with your email address
+            recipient_list = [company.contact_email]
+
+            send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+
+            messages.success(request, 'Company approved and password set.')
+
+    return redirect('adminreg')
+
+
+
+# def upload_excel(request):
+#     return render(request, 'upload_excel.html')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

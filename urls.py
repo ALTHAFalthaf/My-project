@@ -17,6 +17,10 @@ from .views import contact
 from .views import upload_birth_details
 from .views import birth_details_list
 from .views import view_birth_details
+from .views import Company
+from .views import Checkout
+from .views import CheckoutItem
+from .views import process_payment
 
 
 
@@ -80,6 +84,43 @@ urlpatterns = [
    path('view-birth-details/<int:user_profile_id>/', views.view_birth_details, name='view_birth_details'),
 
    path('download-csv/', views.download_csv, name='download_csv'),
+   
+
+   path('view-available-vaccines/', views.view_available_vaccines, name='view_available_vaccines'),
+
+   path('add-to-cart/<int:vaccine_id>/', views.add_to_cart, name='add_to_cart'),
+   path('view-cart/', views.view_cart, name='view_cart'),
+   path('update-cart/', views.update_cart, name='update_cart'),
+
+   path('remove_from_cart/', views.remove_from_cart, name='remove_from_cart'),
+   
+   path('checkout/', views.checkout, name='checkout'),
+
+   path('order_confirm/<int:checkout_id>/', views.order_confirm, name='order_confirm'),
+
+
+
+   
+   # path('purchase-success/', views.purchase_success, name='purchase_success'),
+
+   path('register/', views.register_company, name='register_company'),
+   path('generate_password_company/<int:company_id>/', views.generate_password_company, name='generate_password_company'),
+   path('approve-company/<int:company_id>/', views.approve_company, name='approve_company'),
+   path('company/home/', views.company_home, name='company_home'),
+   path('upload-excel/', views.upload_excel, name='upload_excel'),
+
+   path('delete-vaccine/<int:vaccine_id>/', views.delete_vaccine, name='delete_vaccine'),
+
+
+   path('process-payment/', views.process_payment, name='process_payment'),
+
+   
+
+   
+   
+  
+
+   # path('list/', views.company_list, name='company_list'),
 
   
 

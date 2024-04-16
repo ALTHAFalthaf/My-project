@@ -13,7 +13,7 @@
   <meta name="description" content="" />
   <meta name="author" content="" />
 
-  <title>Mico</title>
+  <title>Vaccination</title>
 
   <!-- bootstrap core css -->
   <link rel="stylesheet" type="text/css" href="{% static '/myproject/css/bootstrap.css' %}" />
@@ -80,6 +80,19 @@
     .function-buttons a.btn-info:hover {
       background-color: #138496;
     }
+
+    .img-boxes {
+  width: 100%; 
+  text-align: center; 
+}
+
+.img-boxes img {
+  width: 100%; 
+  height: auto; 
+  max-width: 100%; 
+  display: block;
+  margin: 0 auto; 
+}
   </style>
   
 
@@ -137,6 +150,13 @@
                   <li class="nav-item">
                     <a class="nav-link" href="">Vaccination</a>
                   </li>
+
+
+                  {% for slot in slots %}
+                 <li class="nav-item active">
+                      <a class="nav-link" href="{% url 'view_booking' slot_id=slot.id %}">View Booking<span class="sr-only">(current)</span></a>
+                 </li>
+                  {% endfor %}
                   
                   <div class="quote_btn-container">
                     <li class="nav-item ">
@@ -167,14 +187,89 @@
 
 
 
-
+<!-- 
     <div class="function-buttons">
-        <h2>Functionalities</h2>
-        <a href="" class="btn btn-primary">Upload Birth Details</a>
-        <a href="" class="btn btn-success">Schedule</a>
-        <a href="" class="btn btn-info">Parent Details</a>
-        <!-- Add more buttons for other functionalities -->
-      </div>
+        
+        <a href="{% url 'upload_birth_details' %}" class="btn btn-primary">Upload Birth Details</a> -->
+
+        
+        <section class="team_section layout_padding">
+          <div class="container">
+            <div class="heading_container heading_center">
+              <h2>
+                GET <span>VACCINATED</span>
+              </h2>
+            </div>
+            <div class="carousel-wrap ">
+              <div class="owl-carousel team_carousel">
+                <div class="item">
+                  <div class="box">
+                    <div class="img-boxes">
+                      <img src="{% static '/myproject/images/child2.jpg' %}" alt="" />
+                    </div>
+                    <div class="detail-box">
+                      <h5>
+                       
+                      </h5>
+                      <h6>
+                       
+                      </h6>
+                      
+                    
+                      
+                      <a href="{% url 'schedule_vaccination' %}"   style="display: inline-block; padding: 10px 20px; background-color: #2adb50; color: #fff; text-decoration: none; border-radius: 5px; transition: background-color 0.3s;">Book Your Schedule</a>
+                    
+                      
+                    </div>
+                  </div>
+                </div>
+                <div class="item">
+                  <div class="box">
+                    <div class="img-boxes">
+                      <img src="{% static '/myproject/images/kidsimg1.jpg' %}" alt="" />
+                    </div>
+                    <div class="detail-box">
+                      <h5>
+                       
+                      </h5>
+                      <h6>
+                       
+                      </h6>
+
+                      <a href="{% url 'upload_birth_details' %}"  style="display: inline-block; padding: 10px 20px; background-color: #2adb50; color: #fff; text-decoration: none; border-radius: 5px; transition: background-color 0.3s;">Upload Birth Details</a>
+                      
+                    </div>
+                  </div>
+                </div>
+                <div class="item">
+                  <div class="box">
+                    <div class="img-boxes">
+                      <img src="{% static '/myproject/images/img6.jpg' %}" alt="" />
+                    </div>
+                    <div class="detail-box">
+                      <h5>
+                        
+                      </h5>
+                      <h6>
+                        
+                      </h6>
+
+                      <a href=""  style="display: inline-block; padding: 10px 20px; background-color: #2adb50; color: #fff; text-decoration: none; border-radius: 5px; transition: background-color 0.3s;">Vaccination record</a>
+                      
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+  
+
+        
+        
+        <!-- <a href="" class="btn btn-info">Parent Details</a>
+         Add more buttons for other functionalities --> 
+      <!-- </div> --> 
 
 
 
@@ -182,7 +277,6 @@
 
 
 
- -->
 
 
   <!-- footer section -->
@@ -190,7 +284,7 @@
     <div class="container">
       <p>
         &copy; <span id="displayYear"></span> All Rights Reserved By
-        <a href="https://html.design/">Free Html Templates</a>
+        <a href="https://html.design/">Kiddoguard</a>
       </p>
     </div>
   </footer>

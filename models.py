@@ -56,7 +56,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     dob = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
-    phone = models.CharField(max_length=15, unique=True)
+    phone = models.CharField(max_length=15)
     objects = CustomUserManager()
     username = models.CharField(max_length=150, unique=False)
     # Define boolean fields for specific roles
@@ -96,11 +96,32 @@ class Doctor(models.Model):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
+
+
+class BirthDetails(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='user_details',null=True, blank=True)
+    child_fname = models.CharField(max_length=100, null=True, blank=True)
+    child_lname = models.CharField(max_length=100, null=True, blank=True)
+    date_of_birth = models.DateField()
+    gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')])
+    place_of_birth = models.CharField(max_length=100)
+    weight = models.DecimalField(max_digits=5, decimal_places=2)  # Using DecimalField for precision
+    height = models.DecimalField(max_digits=5, decimal_places=2)  # Using DecimalField for precision
+    regno = models.CharField(max_length=50, unique=True)
+    rchid = models.CharField(max_length=50)
+    age = models.PositiveIntegerField()  # Age in years
+
+    
+
+    def __str__(self):
+        return self.child_name      
+
  
 
 class Appointment(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='user_appointments',default=1)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='doctor_appointments', default=1)  # Replace '1' with the default doctor's ID
+    child = models.ForeignKey(BirthDetails, on_delete=models.CASCADE, related_name='child_appointments',default=1)  # New field for child
     appointment_date = models.DateField(null=True, blank=True)
     appointment_time = models.TimeField(null=True, blank=True)
     description = models.TextField( null=True, blank=True)
@@ -146,7 +167,7 @@ class Vaccine(models.Model):
 
 class CartItem(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE)
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE,null=True)
     quantity = models.PositiveIntegerField(default=1)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
@@ -176,7 +197,7 @@ class Checkout(models.Model):
 
 class CheckoutItem(models.Model):
     checkout = models.ForeignKey(Checkout, related_name='items', on_delete=models.CASCADE)
-    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE)
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE,null=True)
     quantity = models.PositiveIntegerField(default=1)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -187,7 +208,7 @@ class CheckoutItem(models.Model):
 
 class Payment(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE)
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE,null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateTimeField(auto_now_add=True)
 
@@ -197,7 +218,7 @@ class Payment(models.Model):
 
 
 class VaccinePurchase(models.Model):
-    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE)
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE,null=True)
     buyer = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
     purchase_date = models.DateTimeField(default=timezone.now)
@@ -226,19 +247,50 @@ class Company(models.Model):
         return self.name
 
 
-class BirthDetails(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='user_details',default=1)
-    place_of_birth = models.CharField(max_length=100, null=True, blank=True)
-    weight = models.FloatField(max_length=100, null=True, blank=True)
-    height = models.FloatField(max_length=100, null=True, blank=True)
-    regno = models.CharField(max_length=50, null=True, blank=True)
-    rchid = models.CharField(max_length=50, null=True, blank=True)
+class VaccineSchedule(models.Model):
+    age = models.FloatField()
+    vaccine_name = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.regno
+        return f"{self.age} months - {self.vaccine_name}"
 
 
 
 
+class VaccinationSlot(models.Model):
+    
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('given', 'Given'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    
+
+    child = models.ForeignKey(BirthDetails, on_delete=models.CASCADE)
+    booking_date = models.DateField()
+    slot = models.TimeField()
+    recipient_phone = models.CharField(max_length=20, default='')
+    is_booked = models.BooleanField(default=False)  # Field to indicate if the slot is booked or not
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    def __str__(self):
+        return f"{self.child.child_fname}'s Slot for {self.vaccine} on {self.booking_date}"
+
+
+
+
+
+
+class VaccinePrescription(models.Model):
+    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='vaccine_prescription',null=True)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='vaccine_prescriptions',null=True)
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='prescriptions', null=True)
+    doses = models.PositiveIntegerField(default=1,null=True)
+    comments = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Prescription for {self.appointment.child.child_fname} {self.appointment.child.child_lname} by Dr. {self.doctor.last_name}: {self.vaccine_name} - {self.doses} doses"
 
 

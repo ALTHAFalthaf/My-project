@@ -15,8 +15,8 @@ from .views import payment_success
 from .views import appointment_history
 from .views import contact
 from .views import upload_birth_details
-from .views import birth_details_list
-from .views import view_birth_details
+# from .views import birth_details_list
+# from .views import view_birth_details
 from .views import Company
 from .views import Checkout
 from .views import CheckoutItem
@@ -62,13 +62,23 @@ urlpatterns = [
 
    path('doctor_home/', views.doctor_home, name='doctor_home'),
    path('doctor_appointments/', doctor_appointments, name='doctor_appointments'),
+
+   path('clear_appointments/', views.clear_appointments, name='clear_appointments'),
+
+   
+   path('prescribe_vaccines/<int:appointment_id>/', views.prescribe_vaccines, name='prescribe_vaccines'),
+
    path('doctor_profile/', views.doctor_profile, name='doctor_profile'),
    path('change_password/', views.change_password, name='change_password'),
+
+   path('healthcareprovider_home/', views.healthcareprovider_home, name='healthcareprovider_home'),
    
 
    path('check_time_availability/', check_time_availability, name='check_time_availability'),
    
    path('vaccination_home/', views.vaccination_home, name='vaccination_home'),
+
+   path('vaccine_record/', views.vaccine_record, name='vaccine_record'),
 
    path('upload-birth-details/', upload_birth_details, name='upload_birth_details'),
 
@@ -76,24 +86,27 @@ urlpatterns = [
    
 
    path('appointment_history', appointment_history, name='appointment_history'),
+   path('cancel-appointment/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
 
    path('generate_password_provider/<int:provider_id>/', views.generate_password_provider, name='generate_password_provider'),
 
-   path('birth-details/list/', birth_details_list, name='birth_details_list'),
+   # path('birth-details/list/', birth_details_list, name='birth_details_list'),
 
-   path('view-birth-details/<int:user_profile_id>/', views.view_birth_details, name='view_birth_details'),
+   # path('view-birth-details/<int:user_profile_id>/', views.view_birth_details, name='view_birth_details'),
 
-   path('download-csv/', views.download_csv, name='download_csv'),
+   # path('download-csv/', views.download_csv, name='download_csv'),
    
 
    path('view-available-vaccines/', views.view_available_vaccines, name='view_available_vaccines'),
+
+   path('view-vaccine/', views.view_vaccine, name='view_vaccine'),
 
    path('add-to-cart/<int:vaccine_id>/', views.add_to_cart, name='add_to_cart'),
    path('view-cart/', views.view_cart, name='view_cart'),
    path('update-cart/', views.update_cart, name='update_cart'),
 
    path('remove_from_cart/', views.remove_from_cart, name='remove_from_cart'),
-   
+
    path('checkout/', views.checkout, name='checkout'),
 
    path('order_confirm/<int:checkout_id>/', views.order_confirm, name='order_confirm'),
@@ -106,8 +119,16 @@ urlpatterns = [
    path('register/', views.register_company, name='register_company'),
    path('generate_password_company/<int:company_id>/', views.generate_password_company, name='generate_password_company'),
    path('approve-company/<int:company_id>/', views.approve_company, name='approve_company'),
+   # In urls.py
+   path('deactivate_company/<int:company_id>/', views.deactivate_company, name='deactivate_company'),
+
    path('company/home/', views.company_home, name='company_home'),
+   # path('company_details/', views.company_details, name='company_details'),
+   path('company_profile/', views.company_profile, name='company_profile'),
+
    path('upload-excel/', views.upload_excel, name='upload_excel'),
+
+    path('load_vaccine_schedule/', views.load_vaccine_schedule, name='load_vaccine_schedule'),
 
    path('delete-vaccine/<int:vaccine_id>/', views.delete_vaccine, name='delete_vaccine'),
 
@@ -116,10 +137,26 @@ urlpatterns = [
 
    
 
-   
-   
-  
+   path('schedule/', views.schedule_vaccination, name='schedule_vaccination'),
+ 
 
+   # path('book-vaccination-slot/', views.book_vaccination_slot, name='book_vaccination_slot'),
+   path('view-booking/<int:slot_id>/', views.view_booking, name='view_booking'),
+   path('cancel-slot/<int:slot_id>/', views.cancel_vaccination_slot, name='cancel_vaccination_slot'),
+   path('reschedule-slot/<int:slot_id>/', views.reschedule_vaccination_slot, name='reschedule_vaccination_slot'),
+   
+   path('generate-prescription-pdf/<int:appointment_id>/', views.generate_prescription_pdf, name='generate_prescription_pdf'),
+
+   path('view-vaccination-slots/', views.view_vaccination_slots, name='view_vaccination_slots'),
+   path('update-vaccine-status/<int:slot_id>/', views.update_vaccine_status, name='update_vaccine_status'),
+   path('view-slot-status/<int:slot_id>/', views.view_slot_status, name='view_slot_status'),
+
+
+   # path('api/booked-slots/', views.get_booked_slots, name='get_booked_slots'),
+   
+
+   
+   
    # path('list/', views.company_list, name='company_list'),
 
   

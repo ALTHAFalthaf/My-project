@@ -84,6 +84,12 @@
                       <li class="nav-item active">
                         <a class="nav-link" href="{% url 'index' %}">Home <span class="sr-only">(current)</span></a>
                       </li>
+                     
+                    .
+                      <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">Contact Us</a>
+                      </li>
+                    </li>
                     </ul>
                   </div>
                     <form class="form-inline">
@@ -98,49 +104,34 @@
           </div>
         </header>
 
-     <!-- contact section -->
-  <section class="contact_section layout_padding-bottom">
-    <div class="container">
-      <div class="heading_container">
-        <h2>
-          Get In Touch
-        </h2>
-      </div>
+
+
+<section class="about_section">
+    <div class="container  ">
       <div class="row">
-        <div class="col-md-7">
-          <div class="form_container">
-            <form action="">
-              <div>
-                <input type="text" placeholder="Full Name" />
-              </div>
-              <div>
-                <input type="email" placeholder="Email" />
-              </div>
-              <div>
-                <input type="text" placeholder="Phone Number" />
-              </div>
-              <div>
-                <input type="text" class="message-box" placeholder="Message" />
-              </div>
-              <div class="btn_box">
-                <button>
-                  SEND
-                </button>
-              </div>
-            </form>
+        <div class="col-md-6 ">
+          <div class="img-box">
+            <img src="{% static '/myproject/images/about-img.jpg' %}" alt="">
           </div>
         </div>
-        <div class="col-md-5">
-          <div class="img-box">
-            <img src="{% static '/myproject/images/contact-img.jpg' %}" alt="">
+        <div class="col-md-6">
+          <div class="detail-box">
+            <div class="heading_container">
+              <h2>
+                About <span>KIDDOGUARD</span>
+              </h2>
+            </div>
+            <p>
+              KIDDOGUARD is a sophisticated software solution designed to  optimize the process of vaccine distribution and monitoring for children. This system addresses the critical need for effective vaccine management, ensuring that infants and young children receive timely vaccinations, ultimately contributing to the reduction of vaccine-preventable diseases and their associated morbidity and mortality.
+            </p>
+            <a href="">
+              Read More
+            </a>
           </div>
         </div>
       </div>
     </div>
   </section>
-  <!-- end contact section -->
-
-
 
    <!-- footer section -->
    <footer class="footer_section">

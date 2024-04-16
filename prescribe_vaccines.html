@@ -36,57 +36,51 @@
   <link href="{% static '/myproject/css/responsive.css' %}" rel="stylesheet" />
 
   <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f0f0f0;
-        text-align: center;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    h1 {
-        background-color: #3498db;
-        color: #ffffff;
-        padding: 20px;
-        margin: 0;
-    }
-
-    h2 {
-        margin-top: 20px;
-    }
-
-    ul {
-        list-style-type: none;
-        padding: 0;
-        margin: 20px 0;
-    }
-
-    li {
-        margin: 10px 0;
-        padding: 10px;
-        
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        text-align: left;
-    }
-
-    button {
-        background-color: #23b516;
-        color: #ffffff;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-        border-radius: 4px;
-        margin-top: 10px;
-    }
-
-    button:hover {
-        background-color: #f2f4f6;
-    }
-
    
 
+    form {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+/* Style for form labels */
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+/* Style for form inputs */
+input[type="text"],
+select,
+input[type="number"],
+textarea {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* Style for submit button */
+button[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Style for submit button on hover */
+button[type="submit"]:hover {
+    background-color: #45a049;
+}
 </style>
   
 </head>
@@ -167,92 +161,74 @@
         </div>
       </div>
     </header>
-    <!-- end header section -->
-  
 
-    <h1>Doctor Appointments</h1>
+    <body>
+        <h1>Consulting Page</h1>
+        <p>Welcome to the consulting page.</p>
+        
+        <form id="prescribeForm" method="post">
+          {% csrf_token %}
+          <div>
+              <label for="vaccine">Select Vaccine:</label>
+              <select name="vaccine" id="vaccine" required>
+                  {% for vaccine in vaccines %}
+                      <option value="{{ vaccine.id }}">{{ vaccine.name }}</option>
+                  {% endfor %}
+              </select>
+          </div>
+          <div>
+              <label for="doses">Number of Doses:</label>
+              <input type="number" name="doses" id="doses" min="1" required>
+          </div>
+          <div>
+              <label for="comments">Comments:</label><br>
+              <textarea name="comments" id="comments" rows="4" cols="50"></textarea>
+          </div>
+          <button type="submit" onclick="submitForm(event)">Prescribe</button>
+      </form>
+
+
+      <script>
       
-    
-    <h2>Welcome, Dr. {{ doctor.first_name }} {{ doctor.last_name }}</h2>
-    
-    {% if appointments %}
-        <h3>Your Appointments:</h3>
-        <ul>
-            {% for appointment in appointments %}
-                <li>
-                    <strong>Date:</strong> {{ appointment.appointment_date }}<br>
-                    <strong>Time:</strong> {{ appointment.appointment_time }}<br>
-                    <strong>Patient:</strong> {{ appointment.child.child_fname }} {{ appointment.child.child_lname }}<br>
-                    <strong>Prescription Status:</strong> {% if appointment.prescription_exists %}Prescribed{% else %}Not Prescribed{% endif %}<br>
+
+      function submitForm(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        // Submit the form using AJAX
+        var form = document.getElementById('prescribeForm');
+        var formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message); // Display success message in popup
+            } else {
+                alert(data.message); // Display error message in popup
+            }
+            window.location.href = '{% url "doctor_appointments" %}';
+            // Redirect to doctor_appointments after handling the response
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            // Redirect to doctor_appointments in case of error
+            window.location.href = '{% url "doctor_appointments" %}';
+        });
+    }
+      </script>
 
 
-                    {% if appointment.prescription_exists %}
-                    <p>Prescription already made</p>
-                    {% else %}
-                    <form action="{% url 'prescribe_vaccines' appointment.id %}" method="post">
-                      {% csrf_token %}
-                      <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-                      <button><a href="{% url 'prescribe_vaccines' appointment.id %}">Consult</a></button>
-                      
-                  </form> 
-                   {% endif %}
-                   <button><a href="{% url 'generate_prescription_pdf' appointment.id %}" target="_blank">Generate Prescription PDF</a></button>
-              </li>
-          {% endfor %}
-      </ul>
-      <form action="{% url 'clear_appointments' %}" method="post">
-        {% csrf_token %}
-        <button type="submit">Clear All Appointments</button>
-    </form>
-  {% else %}
-      <p>No appointments available.</p>
-  {% endif %}
 
-  <script>
-      document.querySelectorAll('button[type="submit"]').forEach(button => {
-          button.addEventListener('click', () => {
-              button.closest('form').submit();
-          });
-      });
-  </script>
+
+    </body>
+
 
     
-
-
-  
-
-
- <!-- footer section -->
- <footer class="footer_section">
-  <div class="container">
-    <p>
-      &copy; <span id="displayYear"></span> All Rights Reserved By
-      <a href="https://html.design/">Free Html Templates</a>
-    </p>
-  </div>
-</footer>
-<!-- footer section -->
-
-<!-- jQery -->
-<script src="{% static '/myproject/js/jquery-3.4.1.min.js' %}"></script>
-<!-- bootstrap js -->
-<script src="{% static '/myproject/js/bootstrap.js' %}"></script>
-<!-- nice select -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-nice-select/1.1.0/js/jquery.nice-select.min.js" integrity="sha256-Zr3vByTlMGQhvMfgkQ5BtWRSKBGa2QlspKYJnkjZTmo=" crossorigin="anonymous"></script>
-<!-- owl slider -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
-<!-- datepicker -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/js/bootstrap-datepicker.js"></script>
-<!-- custom js -->
-<script src="{% static '/myproject/js/custom.js' %}"></script>
-
-
-</body>
-
-</html>
-
-    
-    
-   
-</body>
 </html>

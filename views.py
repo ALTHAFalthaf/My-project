@@ -47,6 +47,7 @@ from django.contrib.auth import authenticate,login as auth_login, get_user_model
 from django.contrib.auth import logout as auth_logout 
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import cache_control
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from .models import CustomUser
@@ -65,7 +66,7 @@ def index(request):
     return render(request,'index.html')
 
  #@login_required
-@never_cache
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
 def homepage(request):
     if 'email' in request.session:
         response = render(request, 'homepage.html')
@@ -97,7 +98,7 @@ def view_doctor(request):
     return render(request, 'view_doctor.html')  # Display the success page
 
 
-
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
 def company_home(request):
     return render(request, 'company_home.html')
 
@@ -155,7 +156,12 @@ def loginn(request):
                         # Company login
                         request.session['email'] = email
                         auth_login(request, user)
-                        return redirect('company_home') 
+                        return redirect('company_home')
+                    elif user.role == 'HealthcareProvider':
+                        # Company login
+                        request.session['email'] = email
+                        auth_login(request, user)
+                        return redirect('healthcareprovider_home') 
                     else:
                         request.session['email'] = email
                         auth_login(request, user)
@@ -207,6 +213,10 @@ def signup(request):
             messages.success(request, "Registered successfully")
             return redirect("login")
     return render(request,'signup.html')
+
+
+
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
 
 @login_required
 def user_logout(request):
@@ -277,6 +287,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.contrib.auth.decorators import user_passes_test
+from django.views.decorators.cache import cache_control
 from .models import Doctor
 from .models import Appointment 
 from .models import Company
@@ -293,8 +304,9 @@ def send_registration_email(request):
         messages.success(request, f'Registration email sent to {email}')
         return redirect('adminreg')
 
+
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @login_required
-@user_passes_test(lambda u: u.role == 'Admin', login_url='login')
 def adminreg(request):
     User = get_user_model()
     
@@ -446,8 +458,9 @@ def generate_password(length=12):
 
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from .models import Appointment, Doctor
+from .models import Appointment, Doctor, BirthDetails
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 
 @login_required
 def book_appointment(request, doctor_id):
@@ -456,10 +469,20 @@ def book_appointment(request, doctor_id):
         doctor = Doctor.objects.get(id=doctor_id)
 
         if request.method == 'POST':
+            child_id = request.POST.get('child')
             appointment_date = request.POST.get('appointment_date')
             appointment_time = request.POST.get('appointment_time')
             description = request.POST.get('description')
             comments = request.POST.get('comments')
+
+
+            if not child_id or not appointment_date or not appointment_time:
+                return JsonResponse({'message': 'All fields are required.'})
+
+            try:
+                child = BirthDetails.objects.get(pk=child_id)
+            except BirthDetails.DoesNotExist:
+                return JsonResponse({'message': 'Invalid child selected.'})
 
             # Assuming the user is the patient making the appointment
             user = request.user
@@ -476,10 +499,15 @@ def book_appointment(request, doctor_id):
 
             # Add any additional logic here (e.g., send confirmation email)
 
-            
-            return redirect('appointment_confirmation', appointment_id=appointment.id)  # You can redirect to a success page or any other page
+            return redirect('appointment_confirmation', appointment_id=appointment.id) 
 
-        return render(request, 'book_appointment.html', {'doctor': doctor, 'user': request.user})
+
+        else:
+            children = BirthDetails.objects.all()
+            
+             # You can redirect to a success page or any other page
+
+        return render(request, 'book_appointment.html', {'doctor': doctor, 'children': children})
 
     except Doctor.DoesNotExist:
         messages.error(request, 'Doctor not found.')
@@ -561,6 +589,8 @@ from .models import Doctor
 from .models import Appointment
 from django.contrib.auth.decorators import login_required
 
+
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
 @login_required
 def doctor_home(request):
     return render (request,'doctor_home.html')
@@ -570,9 +600,91 @@ def doctor_home(request):
 def doctor_appointments(request):
     doctor = request.user.doctor  # Assuming the doctor is associated with the user
     appointments = Appointment.objects.filter(doctor=doctor)
+
+    for appointment in appointments:
+        prescription_exists = VaccinePrescription.objects.filter(appointment=appointment).exists()
+        appointment.prescription_exists = prescription_exists  # Add a new attribute to the appointment object
+    
     return render(request, 'doctor_appointments.html', {'doctor': doctor, 'appointments': appointments})
 
+def clear_appointments(request):
+    if request.method == 'POST':
+        # Clear all appointments
+        Appointment.objects.all().delete()
+    return redirect('doctor_appointments')
 
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.http import JsonResponse
+from .models import Appointment, VaccinePrescription, Vaccine
+
+@login_required
+def prescribe_vaccines(request, appointment_id):
+    try:
+        appointment = Appointment.objects.get(id=appointment_id)
+        vaccines = Vaccine.objects.all()  # Fetch all vaccines
+
+        if request.method == 'POST':
+            vaccine_id = request.POST.get('vaccine')
+            doses = request.POST.get('doses')
+            comments = request.POST.get('comments')
+
+            # Assuming you have proper validation for vaccine and doses
+            vaccine_prescription = VaccinePrescription.objects.create(
+                appointment=appointment,
+                doctor=request.user.doctor,
+                vaccine_id=vaccine_id,
+                doses=doses,
+                comments=comments
+            )
+            
+            # Return a success response
+            return JsonResponse({'success': True, 'message': 'Vaccine prescribed successfully.'})
+
+        return render(request, 'prescribe_vaccines.html', {'appointment': appointment, 'vaccines': vaccines})
+
+    except Appointment.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Appointment not found.'})
+
+
+from django.http import HttpResponse
+from django.template.loader import get_template
+from django.conf import settings
+import os
+from xhtml2pdf import pisa
+from .models import Appointment, VaccinePrescription
+
+def generate_prescription_pdf(request, appointment_id):
+    try:
+        appointment = Appointment.objects.get(id=appointment_id)
+        prescription = VaccinePrescription.objects.get(appointment=appointment)
+
+        # Render prescription template with dynamic data
+        template_path = 'prescription_report.html'
+        template = get_template(template_path)
+        html = template.render({'appointment': appointment, 'prescription': prescription})
+
+        # Create PDF
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="prescription.pdf"'
+
+        # Generate PDF
+        pisa_status = pisa.CreatePDF(html, dest=response)
+
+        if pisa_status.err:
+            return HttpResponse('PDF generation error')
+
+        return response
+
+    except (Appointment.DoesNotExist, VaccinePrescription.DoesNotExist):
+        return HttpResponse('Appointment or Prescription not found')
+
+
+
+    
+
+        
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -651,7 +763,8 @@ def change_password(request):
 
 
 def vaccination_home(request):
-    return render(request, 'vaccination_home.html')  
+    slots = VaccinationSlot.objects.all()
+    return render(request, 'vaccination_home.html', {'slots': slots}) 
 
 
 
@@ -682,6 +795,18 @@ def appointment_history(request):
 
     # Pass the sorted appointments to the template
     return render(request, 'appointment_history.html', {'appointments': appointments})
+
+from django.shortcuts import redirect, get_object_or_404
+from .models import Appointment
+
+def cancel_appointment(request, appointment_id):
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+    
+    if request.method == 'POST':
+        # Delete the appointment
+        appointment.delete()
+        # Redirect to appointment history page or any other page
+        return redirect('appointment_history')
 
 
 from django.shortcuts import render, redirect
@@ -776,6 +901,10 @@ def generate_password_provider(request, provider_id):
     return redirect('adminreg')
 
 
+
+def healthcareprovider_home(request):
+    return render(request,'healthcareprovider_home.html')
+
 from django.contrib import messages
 from django.shortcuts import redirect, get_object_or_404
 from .models import Company
@@ -789,7 +918,14 @@ def approve_company(request, company_id):
     return redirect('adminreg')  # Redirect to wherever you want
 
 
-
+def deactivate_company(request, company_id):
+    company = get_object_or_404(Company, id=company_id)
+    if request.method == 'POST':
+        # Deactivate the company
+        company.status = 'Deactivated'
+        company.save()
+        # Optionally, perform additional actions like notifying users or logging the deactivation
+        return redirect('adminreg')  # Replace 'your_redirect_url' with the appropriate URL
 
 
 
@@ -797,79 +933,67 @@ def approve_company(request, company_id):
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import BirthDetails
+from .models import BirthDetails, VaccinationSlot
 
 @login_required
 def upload_birth_details(request):
     if request.method == 'POST':
-        # Get the form data
+        # Extract form data
+        child_fname = request.POST.get('child_fname')
+        child_lname = request.POST.get('child_lname')
+        date_of_birth = request.POST.get('date_of_birth')
+        gender = request.POST.get('gender')
+        age = request.POST.get('age')
         place_of_birth = request.POST.get('place_of_birth')
         weight = request.POST.get('weight')
         height = request.POST.get('height')
         regno = request.POST.get('regno')
         rchid = request.POST.get('rchid')
+        
 
-        # Check if the user is authenticated and is a CustomUser instance
-        if request.user.is_authenticated:
-            user = request.user
+        # Get the current authenticated user
+        # Check if the birth details already exist for the user
+        existing_details = BirthDetails.objects.filter(regno=regno)
+        if existing_details.exists():
+            messages.error(request, "Birth details already exist for this registration number.")
+            return redirect('vaccination_home') 
 
-            # Check if the user already has birth details
-            existing_birth_details = BirthDetails.objects.filter(user=user)
-            if existing_birth_details.exists():
-                message = 'Birth details already exist for this user.'
-                return JsonResponse({'success': False, 'message': message})
-                return redirect('birth_details_list')  # Redirect to the birth details list page
-            else:
-                # Create new birth details
-                birth_details = BirthDetails.objects.create(
-                    user=user,
-                    place_of_birth=place_of_birth,
-                    weight=weight,
-                    height=height,
-                    regno=regno,
-                    rchid=rchid
-                )
-                message = 'Birth details uploaded successfully.'
-                birth_details_list_url = reverse('birth_details_list')  # Get URL of birth_details_list page
-                return JsonResponse({'success': True, 'message': message, 'redirect_url': birth_details_list_url})
-        else:
-            messages.error(request, 'Authentication error: Please log in with a valid user account.')
-            return redirect('login')  # Redirect to the login page if the user is not authenticated
+        # Save data into database
+        birth_details = BirthDetails(
+            child_fname=child_fname,
+            child_lname=child_lname,
+            date_of_birth=date_of_birth,
+            gender=gender,
+            age=age,
+            place_of_birth=place_of_birth,
+            weight=weight,
+            height=height,
+            regno=regno,
+            rchid=rchid
+        )
+        birth_details.save()
 
-    try:
-        # Fetch additional user details for pre-filling the form
-        user_details = request.user
-        child_namea = user_details.first_name
-        child_nameb = user_details.last_name
-        date_of_birth = user_details.dob
-        gender = user_details.gender
+        birth_details = BirthDetails.objects.get(id=1)  # Assuming you have the birth details object
+        VaccinationSlot.schedule_vaccination_slots(birth_details)
 
-        # Pass user details to the template
-        context = {
-            'user': request.user,
-            'child_namea': child_namea,
-            'child_nameb': child_nameb,
-            'date_of_birth': date_of_birth,
-            'gender': gender
-        }
+        # Optionally, you can return a JsonResponse to indicate success
+        return JsonResponse({'success': True, 'message': 'Data saved successfully'})
 
-    except CustomUser.DoesNotExist:
-        messages.error(request, 'User details not found.')
-        return redirect('birth_details_error')  # Redirect to an error page or any other page
-
-    return render(request, 'upload_birth_details.html', context)
+    # Handle GET request (if needed)
+    return render(request, 'upload_birth_details.html')
 
 
 
 
 
-from django.shortcuts import render, get_object_or_404
-from .models import BirthDetails, CustomUser
 
-def view_birth_details(request, user_id):
-    user_profile = get_object_or_404(CustomUser, id=user_id)
-    birth_details = BirthDetails.objects.filter(user=user_profile)
-    return render(request, 'birth_details.html', {'user_profile': user_profile, 'birth_details': birth_details})
+# from django.shortcuts import render, get_object_or_404
+# from .models import BirthDetails, CustomUser
+
+# def view_birth_details(request, user_id):
+#     user_profile = get_object_or_404(CustomUser, id=user_id)
+#     birth_details = BirthDetails.objects.filter(user=user_profile)
+#     return render(request, 'birth_details.html', {'user_profile': user_profile, 'birth_details': birth_details})
 
 
 
@@ -878,36 +1002,40 @@ def view_birth_details(request, user_id):
 
     
     
-from django.shortcuts import render
+# from django.shortcuts import render
 
-def birth_details_list(request):
-     return render(request, 'birth_details_list.html')
+# def birth_details_list(request):
+#      return render(request, 'birth_details_list.html')
 
-import csv
-from django.http import HttpResponse
-from .models import BirthDetails
-
-def download_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="birth_details.csv"'
-
-    writer = csv.writer(response)
-    writer.writerow(['Child Name', 'Date of Birth', 'Gender', 'Place of Birth', 'Weight', 'Height', 'Registration No', 'RCH ID'])
-
-    birth_details = BirthDetails.objects.all()
-    for detail in birth_details:
-         writer.writerow([detail.user.first_name, detail.user.dob, detail.user.gender, detail.place_of_birth, detail.weight, detail.height, detail.regno, detail.rchid])
-
-    return response
-
-
-
-
-# import pandas as pd
-# import os
-# from django.conf import settings
+# import csv
 # from django.http import HttpResponse
-# from .models import Vaccine
+# from .models import BirthDetails
+
+# def download_csv(request):
+#     response = HttpResponse(content_type='text/csv')
+#     response['Content-Disposition'] = 'attachment; filename="birth_details.csv"'
+
+#     writer = csv.writer(response)
+#     writer.writerow(['Child Name', 'Date of Birth', 'Gender','age','Place of Birth', 'Weight', 'Height', 'Registration No', 'RCH ID'])
+
+#     birth_details = BirthDetails.objects.all()
+#     for detail in birth_details:
+#          writer.writerow([detail.user.first_name, detail.user.dob, detail.user.gender,detail.user.age, detail.place_of_birth, detail.weight, detail.height, detail.regno, detail.rchid])
+
+#     return response
+
+
+
+
+
+def vaccine_record(request):
+    return render(request , 'vaccine_record.html')
+
+
+
+
+
+
 
 
 
@@ -977,6 +1105,18 @@ def view_available_vaccines(request):
         # Users not associated with any company are not authorized to view vaccines
         messages.error(request, 'You are not associated with a licensed company.')
         return redirect('home')  # Redirect to home page or any other appropriate page
+
+
+
+def view_vaccine(request):
+    user = request.user
+    if user.is_admin:  # Assuming you have a field 'is_admin' in your CustomUser model
+        # Admin can view all available vaccines
+        vaccines = Vaccine.objects.all()
+        return render(request, 'view_vaccine.html', {'vaccines': vaccines})
+    else:
+        return redirect('home') 
+    return render(request , 'view_vaccine.html')
 
 
 
@@ -1154,12 +1294,11 @@ def order_confirm(request, checkout_id):
         return redirect('view_cart')  # Redirect to the cart page
         
 
-
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Vaccine, Checkout, CartItem, CheckoutItem
+from .models import Vaccine, Payment
+from .forms import PaymentForm  # Import PaymentForm if you have one
 from decimal import Decimal
 import razorpay
 
@@ -1171,6 +1310,11 @@ def process_payment(request):
         
         # Calculate total price
         total_price = sum(item.subtotal for item in cart_items)
+
+        # Ensure total price is at least 1.00 INR
+        if total_price < Decimal('1.00'):
+            messages.error(request, "Total amount must be at least INR 1.00.")
+            return redirect('view_cart')
 
         # Initialize Razorpay client
         client = razorpay.Client(auth=("rzp_test_EZL2rQubxJwxrv", "RhRefR6hrzAdlzxNVUm6s4Ja")) 
@@ -1190,6 +1334,9 @@ def process_payment(request):
 
         try:
             payment = client.order.create(data=data)
+
+            # Save payment details in the database
+            Payment.objects.create(user=request.user, amount=total_price, vaccine=None)  # Assuming no specific vaccine is being purchased
 
             # Render the checkout page with payment details
             return render(request, 'process_payment.html', {'amount': amount_in_paise, 'payment': payment})
@@ -1295,10 +1442,244 @@ def generate_password_company(request, company_id):
 #     return render(request, 'upload_excel.html')
 
 
+# from django.shortcuts import render
+# from .models import Company
+
+# def company_details(request):
+#     # Assuming each user is associated with a company, get the company for the logged-in user
+#     user_company = request.user.company  # Assuming user has a ForeignKey to Company model
+
+#     # Pass the company details to the template context
+#     context = {
+#         'user_company': user_company
+#     }
+
+#     return render(request, 'company_details.html', context)
+
+# from django.contrib.auth.decorators import login_required
+# from django.shortcuts import render
+# from .models import Company
+
+@login_required
+def company_profile(request):
+    company = request.user.company
+    profile_updated = False  # Initialize the variable
+
+    if request.method == 'POST':
+        # Handle profile update
+        company.name = request.POST.get('name', '')
+        company.email = request.POST.get('email', '')
+        company.phone = request.POST.get('phone', '')
+        company.address = request.POST.get('address', '')
+
+        # Handle logo upload
+        logo = request.FILES.get('logo')
+        if logo:
+            # If a new logo is provided, save it and update the company's logo field
+            logo_name = default_storage.save(f'company/logos/{request.user.company.id}/{logo.name}', logo)
+            company.logo = logo_name
+        company.save()
+
+        # Fetch the updated data from the database
+        company = Company.objects.get(id=company.id)
+
+        profile_updated = True
+
+    return render(request, 'company_profile.html', {'company': company, 'profile_updated': profile_updated})
+
+from django.views.decorators.cache import cache_control
+from .models import VaccineSchedule
+import pandas as pd
+from django.conf import settings
+
+@cache_control(no_cache=True,must_revalidate=True,no_store=True)
+@login_required
+def load_vaccine_schedule(request):
+    if request.method == 'POST' and request.FILES['excel_file']:
+        excel_file = request.FILES['excel_file']
+
+        # Check if the data has already been loaded
+        if not settings.VACCINES_LOADED:
+            try:
+                # Read the Excel file into a pandas DataFrame
+                excel_data = pd.read_excel(excel_file)
+                
+                # Iterate over DataFrame rows and create VaccineSchedule instances
+                for index, row in excel_data.iterrows():
+                    vaccine_schedule = VaccineSchedule(
+                        age=row['Age'],
+                        vaccine_name=row['vaccine_name']  # Modify this according to your Excel column name
+                    )
+                    vaccine_schedule.save()
+
+                # Set the flag to indicate that the data has been loaded
+                settings.VACCINES_LOADED = True
+               
+                message = "Vaccine schedule loaded successfully."
+                return render(request, 'load_vaccine_schedule.html', {'message': message, 'alert_type': 'success'})
+            except Exception as e:
+                message = "An error occurred: " + str(e)
+                return render(request, 'load_vaccine_schedule.html', {'message': message, 'alert_type': 'danger'})
+        else:
+            message = "Vaccine schedule already loaded."
+            return render(request, 'load_vaccine_schedule.html', {'message': message, 'alert_type': 'warning'})
+    else:
+        return render(request, 'load_vaccine_schedule.html')
 
 
 
 
+from twilio.rest import Client
+
+def send_sms_message(from_number,to_number, message):
+    # Twilio credentials
+    account_sid = 'AC7d7c9edfde803bcd999874095eb3f336'
+    auth_token = '6b891fa2ed585cfa969166bec347172c'
+    
+
+    # Initialize Twilio client
+    client = Client(account_sid, auth_token)
+
+    try:
+        # Send WhatsApp message
+        message = client.messages.create(
+            body=message,
+            from_=from_number,  # Your Twilio phone number
+            to=to_number  # Recipient's phone number
+        )
+        return True, message.sid
+    except Exception as e:
+        print(f"Failed to send  message: {e}")
+        return False, None
+        
+
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from .models import BirthDetails, VaccinationSlot
+from datetime import date
+
+
+@login_required
+
+
+def schedule_vaccination(request):
+    if request.method == 'POST':
+        child_id = request.POST.get('child')
+        booking_date = request.POST.get('booking_date')
+        slot = request.POST.get('slot')
+        recipient_phone = request.POST.get('recipient_phone')
+
+        # Perform validation
+        if not child_id or not booking_date or not slot:
+            return JsonResponse({'message': 'All fields are required.'})
+
+        try:
+            child = BirthDetails.objects.get(pk=child_id)
+            age = child.calculate_age()
+            vaccines = get_appropriate_vaccine(age)
+        except BirthDetails.DoesNotExist:
+            return JsonResponse({'message': 'Invalid child selected.'})
+
+        # Assuming the vaccine name is directly passed in the form
+        vaccine_name = request.POST.get('vaccine')
+
+        # Check if the slot is available
+        if VaccinationSlot.objects.filter(booking_date=booking_date, slot=slot).exists():
+            return JsonResponse({'message': 'Slot is already booked. Please choose a different slot.'})
+
+        # Find the vaccine object based on the name
+        try:
+            vaccine = Vaccine.objects.get(name=vaccine_name)
+        except Vaccine.DoesNotExist:
+            return JsonResponse({'message': 'Invalid vaccine selected.'})
+
+        # Book the slot
+        slot_obj = VaccinationSlot(child=child, vaccine=vaccine, booking_date=booking_date, slot=slot, recipient_phone=recipient_phone)
+        slot_obj.save()
+
+        # Send SMS reminder
+        from_number = '+19382533475'
+        success, message_id = send_sms_message(from_number, recipient_phone, 'Your vaccination slot has been booked successfully.')
+
+        if success:
+            return JsonResponse({'success': True, 'message': 'Vaccination slot booked successfully.', 'message_id': message_id})
+        else:
+            return JsonResponse({'success': False, 'message': 'Failed to send WhatsApp message.'})
+    else:
+        children = BirthDetails.objects.all()
+        current_date = date.today().strftime('%Y-%m-%d')
+
+        return render(request, 'schedule_vaccination.html', {'children': children, 'vaccines': vaccines, 'current_date': current_date})
+
+
+
+
+def view_booking(request, slot_id):
+    try:
+        booking = VaccinationSlot.objects.get(pk=slot_id)
+    except VaccinationSlot.DoesNotExist:
+        # Handle case where booking does not exist
+        return JsonResponse({'message': 'Invalid booking ID.'}, status=404)
+
+    return render(request, 'view_booking.html', {'booking': booking})
+
+
+
+def cancel_vaccination_slot(request, slot_id):
+    try:
+        slot = VaccinationSlot.objects.get(pk=slot_id)
+        slot.delete()
+        return JsonResponse({ 'message': 'Vaccination slot Cancelled successfully.'})
+    except VaccinationSlot.DoesNotExist:
+        messages.error(request, "Invalid slot ID.")
+
+    return redirect('view_booking', slot_id=slot_id)
+
+
+def reschedule_vaccination_slot(request, slot_id):
+    if request.method == 'POST':
+        new_date = request.POST.get('new_date')
+        new_slot = request.POST.get('new_slot')
+
+        try:
+            slot = VaccinationSlot.objects.get(pk=slot_id)
+            slot.slot.date = new_date
+            slot.slot.slot_time = new_slot
+            slot.slot.save()
+            return JsonResponse({ 'message': 'Vaccination slot rescheduled successfully.'})
+        except VaccinationSlot.DoesNotExist:
+            messages.error(request, "Invalid slot ID.")
+
+        return redirect('view_booking', slot_id=slot_id)
+    else:
+        current_date = datetime.now().strftime('%Y-%m-%d')  # Get current date in 'YYYY-MM-DD' format
+        return render(request, 'reschedule_vaccination_slot.html', {'slot_id': slot_id, 'current_date': current_date})
+
+
+from django.shortcuts import render
+from .models import VaccinationSlot
+
+def view_vaccination_slots(request):
+    # Fetch all booked vaccination slots
+    vaccination_slots = VaccinationSlot.objects.all()
+    return render(request, 'view_vaccination_slots.html', {'vaccination_slots': vaccination_slots})
+
+def update_vaccine_status(request, slot_id):
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        try:
+            slot = VaccinationSlot.objects.get(pk=slot_id)
+            slot.status = status
+            slot.save()
+            return JsonResponse({'success': True, 'message': 'Vaccine status updated successfully.'})
+        except VaccinationSlot.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Vaccination slot not found.'})
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method.'})
+
+def view_slot_status(request, slot_id):
+    slot = get_object_or_404(VaccinationSlot, pk=slot_id)
+    return render(request, 'view_slot_status.html', {'slot': slot})
 
 
 

@@ -14,7 +14,7 @@
     <meta name="description" content="" />
     <meta name="author" content="" />
 
-    <title>Add to cart</title>
+    <title>User Accounts</title>
 
     <!-- bootstrap core css -->
     <link rel="stylesheet" type="text/css" href="{% static 'myproject/css/bootstrap.css' %}" />
@@ -244,6 +244,93 @@
 }  
 
 
+.vaccine-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adjust the width of each box as needed */
+            grid-gap: 30px; /* Adjust the gap between boxes as needed */
+        }
+    
+        .vaccine-item {
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #ffffff; /* Set the background color of each box */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a box shadow for depth */
+            transition: transform 0.3s ease; /* Add a smooth transition effect */
+        }
+    
+        .vaccine-item:hover {
+            transform: translateY(-5px); /* Add a slight lift effect on hover */
+        }
+    
+        .vaccine-item h3 {
+            margin-top: 0;
+            margin-bottom: 10px; /* Adjust spacing as needed */
+            color: #333333; /* Set the color of the vaccine name */
+        }
+    
+        .vaccine-item p {
+            margin-bottom: 0;
+            color: #666666; /* Set the color of additional details */
+        }
+
+        .vaccine-item form {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .vaccine-item form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .vaccine-item form input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .vaccine-item form button[type="submit"] {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .vaccine-item form button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+
+                /* Modal background */
+    .modal-background {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0%;
+        height: 0%;
+        background-color: #f7f4f4dd;
+        z-index: 9999;
+    }
+
+    /* Modal content */
+    .modal-content {
+        display: none;
+        position: fixed;
+        top: 5%;
+        left: 75%;
+        background-color: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        z-index: 10000;
+    }
+
+
 
 
     </style>
@@ -326,13 +413,117 @@
       </div>
     </header>
 
-<body>
-    <h1>Add {{ vaccine.name }} to Cart</h1>
-    <form method="post" action="{% url 'view_cart' %}">
-        {% csrf_token %}
-        <label for="quantity">Quantity:</label>
-        <input type="number" name="quantity" id="quantity" value="1" min="1" required>
-        <button type="submit">Add to Cart</button>
-    </form>
+
+
+
+    
+    <h1>Available Vaccines</h1>
+
+    <div class="modal-background">
+      <div class="modal-content">
+          <button onclick="closeModal()">Close</button>
+          <div class="messages">
+              {% for message in messages %}
+              <div class="message">{{ message }}</div>
+              {% endfor %}
+          </div>
+      </div>
+  </div>
+
+    
+    <ul class="vaccine-list">
+        {% for vaccine in vaccines %}
+        <li class="vaccine-item">
+            <h3>{{ vaccine.name }}</h3>
+            <p>Edition Date: {{ vaccine.edition_date }}</p>
+            <p>Edition Status: {{ vaccine.edition_status }}</p>
+            <p>Last Updated Date: {{ vaccine.last_updated_date }}</p>
+            <p>price: {{vaccine.price}} </p>
+            <form method="post" action="{% url 'add_to_cart' vaccine.id %}">
+                {% csrf_token %}
+                <label for="quantity">Quantity:</label>
+                <input type="number" id="quantity" name="quantity" value="1" min="1">
+                <button type="submit">Add to Cart</button>
+            
+            
+            </form>
+         
+      </li>
+        {% endfor %}
+    </ul>
+
+        <!-- JavaScript for client-side validation -->
+        <script>
+            // Validate the quantity input field
+            document.addEventListener('DOMContentLoaded', function() {
+                var quantityInput = document.getElementById('quantity');
+                var quantityError = document.getElementById('quantity-error');
+    
+                quantityInput.addEventListener('input', function() {
+                    if (quantityInput.validity.valid) {
+                        quantityError.style.display = 'none';
+                    } else {
+                        quantityError.style.display = 'inline';
+                    }
+                });
+            });
+        </script>
+
+
+<script>
+  // Show modal when the page is loaded and messages are present
+  window.addEventListener('DOMContentLoaded', function () {
+      var messages = document.querySelector('.messages');
+      if (messages) {
+          var modalBackground = document.querySelector('.modal-background');
+          var modalContent = document.querySelector('.modal-content');
+
+          modalBackground.style.display = 'block';
+          modalContent.style.display = 'block';
+      }
+  });
+
+  // Hide modal when close button is clicked
+  function closeModal() {
+      var modalBackground = document.querySelector('.modal-background');
+      var modalContent = document.querySelector('.modal-content');
+
+      modalBackground.style.display = 'none';
+      modalContent.style.display = 'none';
+  }
+</script>
+
+
+
+
+
+    <!-- footer section -->
+    <footer class="footer_section">
+        <div class="container">
+            <p>
+                &copy; <span id="displayYear"></span> All Rights Reserved By
+                <a href="https://html.design/">Kiddoguard</a>
+            </p>
+        </div>
+    </footer>
+    <!-- footer section -->
+
+    <!-- jQery -->
+    <script src="{% static 'myproject/js/jquery-3.4.1.min.js' %}"></script>
+    <!-- bootstrap js -->
+    <script src="{% static 'myproject/js/bootstrap.js' %}"></script>
+    <!-- nice select -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-nice-select/1.1.0/js/jquery.nice-select.min.js"
+        integrity="sha256-Zr3vByTlMGQhvMfgkQ5BtWRSKBGa2QlspKYJnkjZTmo=" crossorigin="anonymous"></script>
+    <!-- owl slider -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+    <!-- datepicker -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/js/bootstrap-datepicker.js">
+    </script>
+    <!-- custom js -->
+    <script src="{% static 'myproject/js/custom.js' %}"></script>
+
+
 </body>
+
 </html>

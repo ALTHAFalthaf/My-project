@@ -183,7 +183,8 @@
     <h1>Booking Details</h1>
     <div class="booking-info">
     <p><strong>Child Name:</strong> {{ booking.child.child_fname }} {{ booking.child.child_lname }}</p>
-    <p><strong>Vaccine:</strong> {{ booking.vaccine }}</p>
+
+    
     <p><strong>Booking Date:</strong> {{ booking.booking_date }}</p>
     <p><strong>Slot:</strong> {{ booking.slot }}</p>
     </div>
@@ -194,39 +195,17 @@
         {% csrf_token %}
         <button type="submit" onclick="submitForm(event)">Cancel Booking</button>
     </form>
-    <form action="{% url 'reschedule_vaccination_slot' booking.id %}" id="bookSlotForm" method="post">
-        {% csrf_token %}
-        <label for="booking_date">New Booking Date:</label>
-        <input type="date" name="booking_date" id="booking_date" min="{{ current_date }}" required>
-        <br><br>
-        <label for="slot">New Slot:</label>
-        <select name="slot" id="slot">
-        
-        </select>
-        <br><br>
-        <button type="submit" onclick="submitForm(event)">Reschedule Booking</button>
-    </form>
+
+    
+    <a href="{% url 'reschedule_vaccination_slot' slot_id=booking.id %}">Reschedule Booking</a>
 </div>
     </div>
+
+    
 
     <script>
 
 
-        // Get the current date and time
-        var currentDate = new Date();
-        var currentHour = currentDate.getHours();
-        
-        // Define time slots starting from the current hour
-        var timeSlots = [];
-        for (var i = currentHour; i < 24; i++) {
-            var hour = (i < 10) ? '0' + i : i;
-            var time12HourFormat = (i < 12) ? hour + ':00 AM' : (i == 12) ? '12:00 PM' : (i - 12) + ':00 PM';
-            timeSlots.push('<option value="' + hour + ':00">' + time12HourFormat + '</option>');
-        }
-        
-        // Update the dropdown with time slots
-        document.getElementById('slot').innerHTML = timeSlots.join('');
-    
          
     
         function submitForm(event) {

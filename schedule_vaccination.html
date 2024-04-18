@@ -180,35 +180,27 @@
         {% csrf_token %}
         
 
-        <label for="child_id">Select Child:</label>
-        <select name="child_id" id="child_id">
-            <!-- Assuming you have a list of children to choose from -->
-            {% for child in children %}
-                <option value="{{ child.id }}">{{ child.child_fname }}{{ child.child_lname }}</option>
-            {% endfor %}
+        <label for="child">Select Child:</label>
+        <select name="child" id="child">
+            <option value="{{ child.id }}" selected>{{ child.child_fname }} {{ child.child_lname }}</option>
+            <!-- You can add more options dynamically if needed -->
         </select>
         <br><br>
 
-        <label for="vaccine">Select Vaccine:</label>
-<select name="vaccine" id="vaccine">
-    {% if scheduled_vaccines %}
-        {% for vaccine in scheduled_vaccines %}
-            <option value="{{ vaccine }}">{{ vaccine }}</option>
-        {% endfor %}
-    {% else %}
-        <option value="not_ready">Not ready to take the vaccine yet</option>
-    {% endif %}
-</select>
-         <br>
+
         
        
-        <label for="booking_date">Booking Date:</label>
+        <label for="booking_date">New Booking Date:</label>
         <input type="date" name="booking_date" id="booking_date" min="{{ current_date }}" required>
+        <span id="date-error" style="color: red;"></span> <!-- Error message placeholder -->
         <br><br>
-        
-        <label for="slot">Slot:</label>
-        <select name="slot" id="slot">
-        
+    
+        <label for="slot">New Slot:</label>
+        <select name="slot" id="slot" required>
+            <!-- Options for slot selection -->
+        </select>
+        <span id="slot-error" style="color: red;"></span> <!-- Error message placeholder -->
+        <br><br>
         </select>
          
        
@@ -218,34 +210,62 @@
         <span id="phone-error" style="color: red;"></span> <!-- Error message placeholder -->
         <br><br>
 
-
-        
+        <label for="vaccine">Select Vaccine:</label>
+        <select name="vaccine" id="vaccine">
+         {% for vaccine_name in vaccines %}
+            <option value="{{ vaccine_name }}">{{ vaccine_name }}</option>
+        {% endfor %}
+    </select>
+    <br><br>
 
         <button type="submit" onclick="submitForm(event)">Book Slot</button>
     </form>
 
 
     
-    
-
-    
 
     <script>
 
-    var currentDate = new Date();
+var currentDate = new Date().toISOString().split('T')[0];
 
-    var currentHour = currentDate.getHours();
-    
-    // Define time slots starting from the current hour
-    var timeSlots = [];
-    for (var i = 10; i <= 15; i++) {
-        var hour = (i < 10) ? '0' + i : i;
-        var time12HourFormat = (i < 12) ? hour + ':00 AM' : (i == 12) ? '12:00 PM' : (i - 12) + ':00 PM';
-        timeSlots.push('<option value="' + hour + ':00">' + time12HourFormat + '</option>');
+// Set min attribute for booking_date input
+document.getElementById('booking_date').setAttribute('min', currentDate);
+
+// Define time slots starting from the current hour
+var timeSlots = [];
+for (var i = 10; i <= 15; i++) {
+    var hour = (i < 10) ? '0' + i : i;
+    var time12HourFormat = (i < 12) ? hour + ':00 AM' : (i == 12) ? '12:00 PM' : (i - 12) + ':00 PM';
+    timeSlots.push('<option value="' + hour + ':00">' + time12HourFormat + '</option>');
+}
+
+// Update the dropdown with time slots
+document.getElementById('slot').innerHTML = timeSlots.join('');
+
+// Add event listeners for input validation
+document.getElementById('booking_date').addEventListener('change', validateBookingDate);
+document.getElementById('slot').addEventListener('change', validateSlot);
+
+// Function to validate booking date
+function validateBookingDate() {
+    var bookingDate = document.getElementById('booking_date').value;
+    var dateError = document.getElementById('date-error');
+
+    if (bookingDate < currentDate) {
+        dateError.textContent = 'Booking date cannot be in the past.';
+    } else {
+        dateError.textContent = '';
     }
+}
+
+// Function to validate slot
+function validateSlot() {
+    var slot = document.getElementById('slot').value;
+    var slotError = document.getElementById('slot-error');
+
+    // Perform additional slot validation if needed
     
-    // Update the dropdown with time slots
-    document.getElementById('slot').innerHTML = timeSlots.join('');
+}
 
 
 
@@ -337,6 +357,13 @@
 
     
         
+    function updateVaccineName() {
+    var selectElement = document.getElementById("vaccineSelect");
+    var selectedVaccine = selectElement.options[selectElement.selectedIndex].text;
+    document.getElementById("selectedVaccine").innerText = selectedVaccine;
+    }
+
+
 
 
 

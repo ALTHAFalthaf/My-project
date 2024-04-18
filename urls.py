@@ -129,20 +129,25 @@ urlpatterns = [
    path('upload-excel/', views.upload_excel, name='upload_excel'),
 
     path('load_vaccine_schedule/', views.load_vaccine_schedule, name='load_vaccine_schedule'),
+    path('download-vaccine-schedule/', views.download_vaccine_schedule, name='download_vaccine_schedule'),
+    path('render-excel-data/', views.render_excel_data, name='render_excel_data'),
 
    path('delete-vaccine/<int:vaccine_id>/', views.delete_vaccine, name='delete_vaccine'),
 
 
    path('process-payment/', views.process_payment, name='process_payment'),
+   path('handle_payment_confirmation/', views.handle_payment_confirmation, name='handle_payment_confirmation'),
 
    
-
-   path('schedule/', views.schedule_vaccination, name='schedule_vaccination'),
+   
+   path('schedule/<int:child_id>/', views.schedule_vaccination, name='schedule_vaccination'),
+   
  
 
    # path('book-vaccination-slot/', views.book_vaccination_slot, name='book_vaccination_slot'),
    path('view-booking/<int:slot_id>/', views.view_booking, name='view_booking'),
    path('cancel-slot/<int:slot_id>/', views.cancel_vaccination_slot, name='cancel_vaccination_slot'),
+   
    path('reschedule-slot/<int:slot_id>/', views.reschedule_vaccination_slot, name='reschedule_vaccination_slot'),
    
    path('generate-prescription-pdf/<int:appointment_id>/', views.generate_prescription_pdf, name='generate_prescription_pdf'),
@@ -154,7 +159,8 @@ urlpatterns = [
 
    # path('api/booked-slots/', views.get_booked_slots, name='get_booked_slots'),
    
-
+   # path('indexes/', views.homes, name='homes'),
+   # path('predict/', views.predict, name='predict'),
    
    
    # path('list/', views.company_list, name='company_list'),

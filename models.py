@@ -268,7 +268,8 @@ class VaccinationSlot(models.Model):
 
     
 
-    child = models.ForeignKey(BirthDetails, on_delete=models.CASCADE)
+    child = models.ForeignKey(BirthDetails, on_delete=models.CASCADE,default=1)
+    vaccine = models.CharField(max_length=100,null=True) 
     booking_date = models.DateField()
     slot = models.TimeField()
     recipient_phone = models.CharField(max_length=20, default='')

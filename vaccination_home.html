@@ -148,7 +148,7 @@
                     <a class="nav-link" href="{% url 'homepage' %}">Home <span class="sr-only">(current)</span></a>
                   </li>
                   <li class="nav-item">
-                    <a class="nav-link" href="">Vaccination</a>
+                    <a class="nav-link" href="{% url 'download_vaccine_schedule' %}">Download Schedule</a>
                   </li>
 
 
@@ -217,7 +217,7 @@
                       
                     
                       
-                      <a href="{% url 'schedule_vaccination' %}"   style="display: inline-block; padding: 10px 20px; background-color: #2adb50; color: #fff; text-decoration: none; border-radius: 5px; transition: background-color 0.3s;">Book Your Schedule</a>
+                      <a href="{% url 'schedule_vaccination' child_id=child_id %}"    style="display: inline-block; padding: 10px 20px; background-color: #2adb50; color: #fff; text-decoration: none; border-radius: 5px; transition: background-color 0.3s;">Book Your Schedule</a>
                     
                       
                     </div>
@@ -254,7 +254,7 @@
                         
                       </h6>
 
-                      <a href=""  style="display: inline-block; padding: 10px 20px; background-color: #2adb50; color: #fff; text-decoration: none; border-radius: 5px; transition: background-color 0.3s;">Vaccination record</a>
+                      <a href="{% url 'render_excel_data' %}"  style="display: inline-block; padding: 10px 20px; background-color: #2adb50; color: #fff; text-decoration: none; border-radius: 5px; transition: background-color 0.3s;">View schedule</a>
                       
                     </div>
                   </div>

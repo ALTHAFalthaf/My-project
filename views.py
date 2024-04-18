@@ -760,11 +760,14 @@ def change_password(request):
 
 
 #Vaccintion views
-
+from django.shortcuts import render
+from .models import BirthDetails
 
 def vaccination_home(request):
+    # Assuming you retrieve the child ID from the database or any other source
+    child_id = 2  # Replace 1 with the actual child ID
     slots = VaccinationSlot.objects.all()
-    return render(request, 'vaccination_home.html', {'slots': slots}) 
+    return render(request, 'vaccination_home.html', {'child_id': child_id,'slots':slots})
 
 
 
@@ -939,6 +942,7 @@ from .models import BirthDetails, VaccinationSlot
 def upload_birth_details(request):
     if request.method == 'POST':
         # Extract form data
+        
         child_fname = request.POST.get('child_fname')
         child_lname = request.POST.get('child_lname')
         date_of_birth = request.POST.get('date_of_birth')
@@ -960,6 +964,7 @@ def upload_birth_details(request):
 
         # Save data into database
         birth_details = BirthDetails(
+            
             child_fname=child_fname,
             child_lname=child_lname,
             date_of_birth=date_of_birth,
@@ -973,14 +978,15 @@ def upload_birth_details(request):
         )
         birth_details.save()
 
-        birth_details = BirthDetails.objects.get(id=1)  # Assuming you have the birth details object
-        VaccinationSlot.schedule_vaccination_slots(birth_details)
 
         # Optionally, you can return a JsonResponse to indicate success
         return JsonResponse({'success': True, 'message': 'Data saved successfully'})
 
-    # Handle GET request (if needed)
-    return render(request, 'upload_birth_details.html')
+    else:
+        
+
+        # Render the template with the child object and child_id
+        return render(request, 'upload_birth_details.html')
 
 
 
@@ -1128,7 +1134,7 @@ def add_to_cart(request, vaccine_id):
         user = request.user
         # Create or update the cart item for the user and vaccine
         cart_item, created = CartItem.objects.get_or_create(user=user, vaccine=vaccine)
-        cart_item.quantity += quantity
+        cart_item.quantity = quantity
         cart_item.save()
         return redirect('view_cart')
     return render(request, 'add_to_cart.html', {'vaccine': vaccine})
@@ -1308,51 +1314,60 @@ def process_payment(request):
         # Retrieve the user's cart items
         cart_items = CartItem.objects.filter(user=request.user)
         
-        # Calculate total price
-        total_price = sum(item.subtotal for item in cart_items)
+        # Calculate total price in Indian Rupees (Rs.)
+        total_price_rs = sum(item.subtotal for item in cart_items)
+        
+        # Debug statement to print total price
+        print("Total Price (Rs.):", total_price_rs)
 
-        # Ensure total price is at least 1.00 INR
-        if total_price < Decimal('1.00'):
-            messages.error(request, "Total amount must be at least INR 1.00.")
-            return redirect('view_cart')
+        # Ensure total price is at least Rs. 1.00
+        if total_price_rs < Decimal('1.00'):
+            messages.error(request, "Total amount must be at least Rs. 1.00.")
+            return redirect('process_payment')
+
+        # Convert total price to paise (Razorpay uses paise for amounts)
+        total_price_paise = int(total_price_rs * 100)
 
         # Initialize Razorpay client
         client = razorpay.Client(auth=("rzp_test_EZL2rQubxJwxrv", "RhRefR6hrzAdlzxNVUm6s4Ja")) 
 
-        # Convert total price to paise
-        amount_in_paise = int(total_price * 100)
-
-        # Create payment order
-        data = {
-            "amount": amount_in_paise,
-            "currency": "INR",
-            "receipt": "vaccine_order",
-            "notes": {
-                "description": "Payment for vaccine purchase"
-            }
-        }
 
         try:
             payment = client.order.create(data=data)
-
-            # Save payment details in the database
-            Payment.objects.create(user=request.user, amount=total_price, vaccine=None)  # Assuming no specific vaccine is being purchased
-
-            # Render the checkout page with payment details
-            return render(request, 'process_payment.html', {'amount': amount_in_paise, 'payment': payment})
-
+            
+            # Redirect to Razorpay checkout page
+            return redirect(payment['short_url'])
+        
         except Exception as e:
             # Handle payment processing errors
             messages.error(request, f"Payment processing error: {str(e)}")
             return redirect('view_cart')
-
     else:
         # If request method is not POST, redirect to the cart
         return redirect('view_cart')
 
 
 
+from django.http import HttpResponse
+
+def handle_payment_confirmation(request):
+    # Retrieve payment details from the request
+    payment_id = request.GET.get('payment_id')
+    payment_status = request.GET.get('payment_status')
     
+    # Update payment status in the database
+    if payment_status == 'captured':
+        # Payment is successful
+        payment = Payment.objects.get(id=payment_id)
+        payment.status = 'success'
+        payment.save()
+        # Optionally, notify the user about successful payment
+        
+        return HttpResponse("Payment successful. Thank you!")
+    else:
+        # Payment failed or was cancelled
+        return HttpResponse("Payment failed or cancelled.")
+   
 
 
 
@@ -1526,6 +1541,41 @@ def load_vaccine_schedule(request):
     else:
         return render(request, 'load_vaccine_schedule.html')
 
+from django.http import HttpResponse
+from django.conf import settings
+import os
+import pandas as pd
+
+def download_vaccine_schedule(request):
+     # Path to the uploaded Excel file
+    excel_file_path = os.path.join(settings.MEDIA_ROOT, 'vaccine_list.xlsx')
+
+    # Check if the file exists
+    if os.path.exists(excel_file_path):
+        with open(excel_file_path, 'rb') as file:
+            response = HttpResponse(file.read(), content_type='application/vnd.ms-excel')
+            response['Content-Disposition'] = 'attachment; filename=vaccine_list.xlsx'
+            return response
+    else:
+        return HttpResponse("The requested file does not exist.")
+
+
+import pandas as pd
+
+def render_excel_data(request):
+    # Path to the uploaded Excel file
+    excel_file_path = os.path.join(settings.MEDIA_ROOT, 'vaccine_list.xlsx')
+
+    if os.path.exists(excel_file_path):
+        # Read the Excel file into a pandas DataFrame
+        excel_data = pd.read_excel(excel_file_path)
+
+        # Convert the DataFrame to HTML table
+        html_table = excel_data.to_html(index=False, classes='table table-striped table-bordered')
+
+        return render(request, 'excel_data.html', {'html_table': html_table})
+    else:
+        return HttpResponse("The Excel file does not exist.", status=404)
 
 
 
@@ -1534,7 +1584,7 @@ from twilio.rest import Client
 def send_sms_message(from_number,to_number, message):
     # Twilio credentials
     account_sid = 'AC7d7c9edfde803bcd999874095eb3f336'
-    auth_token = '6b891fa2ed585cfa969166bec347172c'
+    auth_token = 'bafea997bd46570b0039a5394f8bfbac'
     
 
     # Initialize Twilio client
@@ -1556,45 +1606,41 @@ def send_sms_message(from_number,to_number, message):
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from .models import BirthDetails, VaccinationSlot
+from .models import VaccineSchedule
 from datetime import date
-
+from . import utils
 
 @login_required
+def schedule_vaccination(request, child_id):
+    vaccines = []
 
-
-def schedule_vaccination(request):
     if request.method == 'POST':
-        child_id = request.POST.get('child')
+        # Extract form data
         booking_date = request.POST.get('booking_date')
         slot = request.POST.get('slot')
         recipient_phone = request.POST.get('recipient_phone')
-
-        # Perform validation
-        if not child_id or not booking_date or not slot:
+        
+        pass
+    
+        if not child_id or not booking_date or not slot or not recipient_phone:
             return JsonResponse({'message': 'All fields are required.'})
 
         try:
-            child = BirthDetails.objects.get(pk=child_id)
-            age = child.calculate_age()
-            vaccines = get_appropriate_vaccine(age)
+            child = BirthDetails.objects.get(id=child_id)
+            age = utils.calculate_age(child.date_of_birth)
+            vaccines = VaccineSchedule.objects.values_list('vaccine_name', flat=True).distinct()
         except BirthDetails.DoesNotExist:
             return JsonResponse({'message': 'Invalid child selected.'})
 
-        # Assuming the vaccine name is directly passed in the form
-        vaccine_name = request.POST.get('vaccine')
+        
 
         # Check if the slot is available
         if VaccinationSlot.objects.filter(booking_date=booking_date, slot=slot).exists():
             return JsonResponse({'message': 'Slot is already booked. Please choose a different slot.'})
 
-        # Find the vaccine object based on the name
-        try:
-            vaccine = Vaccine.objects.get(name=vaccine_name)
-        except Vaccine.DoesNotExist:
-            return JsonResponse({'message': 'Invalid vaccine selected.'})
 
         # Book the slot
-        slot_obj = VaccinationSlot(child=child, vaccine=vaccine, booking_date=booking_date, slot=slot, recipient_phone=recipient_phone)
+        slot_obj = VaccinationSlot(child=child, booking_date=booking_date, slot=slot, recipient_phone=recipient_phone)
         slot_obj.save()
 
         # Send SMS reminder
@@ -1604,12 +1650,23 @@ def schedule_vaccination(request):
         if success:
             return JsonResponse({'success': True, 'message': 'Vaccination slot booked successfully.', 'message_id': message_id})
         else:
-            return JsonResponse({'success': False, 'message': 'Failed to send WhatsApp message.'})
+            return JsonResponse({'success': False, 'message': 'Failed to send  message.'})
+    
     else:
-        children = BirthDetails.objects.all()
-        current_date = date.today().strftime('%Y-%m-%d')
+        if not child_id:
+            return JsonResponse({'message': 'Child ID not provided.'})
 
-        return render(request, 'schedule_vaccination.html', {'children': children, 'vaccines': vaccines, 'current_date': current_date})
+        try:
+            child = BirthDetails.objects.get(id=child_id)
+            age = utils.calculate_age(child.date_of_birth)
+            vaccines = VaccineSchedule.objects.values_list('vaccine_name', flat=True).distinct()
+        except BirthDetails.DoesNotExist:
+            return JsonResponse({'message': 'Invalid child selected.'})
+
+        current_date = date.today().strftime('%Y-%m-%d')
+        slot_id = 1 
+
+        return render(request, 'schedule_vaccination.html', {'child': child, 'vaccines': vaccines, 'current_date': current_date, 'child_id': child_id,'slot_id': slot_id})
 
 
 
@@ -1621,7 +1678,9 @@ def view_booking(request, slot_id):
         # Handle case where booking does not exist
         return JsonResponse({'message': 'Invalid booking ID.'}, status=404)
 
-    return render(request, 'view_booking.html', {'booking': booking})
+    vaccines = VaccineSchedule.objects.values_list('vaccine_name', flat=True).distinct()
+
+    return render(request, 'view_booking.html', {'booking': booking, 'vaccines': vaccines})
 
 
 
@@ -1636,24 +1695,72 @@ def cancel_vaccination_slot(request, slot_id):
     return redirect('view_booking', slot_id=slot_id)
 
 
+
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from .models import BirthDetails, VaccinationSlot
+from .models import VaccineSchedule
+from datetime import date
+from . import utils
+
+@login_required
 def reschedule_vaccination_slot(request, slot_id):
+    vaccines = []
+
     if request.method == 'POST':
-        new_date = request.POST.get('new_date')
-        new_slot = request.POST.get('new_slot')
+        # Extract form data
+        booking_date = request.POST.get('booking_date')
+        slot = request.POST.get('slot')
+        recipient_phone = request.POST.get('recipient_phone')
+        
+        if not slot_id or not booking_date or not slot or not recipient_phone:
+            return JsonResponse({'message': 'All fields are required.'})
 
         try:
-            slot = VaccinationSlot.objects.get(pk=slot_id)
-            slot.slot.date = new_date
-            slot.slot.slot_time = new_slot
-            slot.slot.save()
-            return JsonResponse({ 'message': 'Vaccination slot rescheduled successfully.'})
+            slot_obj = VaccinationSlot.objects.get(id=slot_id)
+            child = slot_obj.child
+            age = utils.calculate_age(child.date_of_birth)
+            vaccines = VaccineSchedule.objects.values_list('vaccine_name', flat=True).distinct()
         except VaccinationSlot.DoesNotExist:
-            messages.error(request, "Invalid slot ID.")
+            return JsonResponse({'message': 'Invalid slot ID.'})
 
-        return redirect('view_booking', slot_id=slot_id)
+        # Check if the new slot is available
+        if VaccinationSlot.objects.filter(booking_date=booking_date, slot=slot).exists():
+            return JsonResponse({'message': 'Slot is already booked. Please choose a different slot.'})
+
+        # Update the slot details
+        slot_obj.booking_date = booking_date
+        slot_obj.slot = slot
+        slot_obj.recipient_phone = recipient_phone
+        slot_obj.save()
+
+        # Send SMS reminder
+        from_number = '+19382533475'
+        success, message_id = send_sms_message(from_number, recipient_phone, 'Your vaccination slot has been rescheduled successfully.')
+
+        if success:
+            return JsonResponse({'success': True, 'message': 'Vaccination slot rescheduled successfully.', 'message_id': message_id})
+        else:
+            return JsonResponse({'success': False, 'message': 'Failed to send message.'})
+    
     else:
-        current_date = datetime.now().strftime('%Y-%m-%d')  # Get current date in 'YYYY-MM-DD' format
-        return render(request, 'reschedule_vaccination_slot.html', {'slot_id': slot_id, 'current_date': current_date})
+        if not slot_id:
+            return JsonResponse({'message': 'Slot ID not provided.'})
+
+        try:
+            slot_obj = VaccinationSlot.objects.get(id=slot_id)
+            child = slot_obj.child
+            age = utils.calculate_age(child.date_of_birth)
+            vaccines = VaccineSchedule.objects.values_list('vaccine_name', flat=True).distinct()
+        except VaccinationSlot.DoesNotExist:
+            return JsonResponse({'message': 'Invalid slot ID.'})
+
+        current_date = date.today().strftime('%Y-%m-%d')
+
+        return render(request, 'reschedule_vaccination_slot.html', {'child': child, 'vaccines': vaccines, 'current_date': current_date, 'slot': slot_obj})
+
+
+
 
 
 from django.shortcuts import render
@@ -1685,7 +1792,58 @@ def view_slot_status(request, slot_id):
 
 
 
+# from django.shortcuts import render
+# from django.http import HttpResponse
+# from .utils import calculate_bmi,calculate_weight_status, calculate_z_score, calculate_weight_gain_rate
+# from sklearn.ensemble import RandomForestClassifier
 
+# from .utils import y_train, X_train
+
+# rf_model = RandomForestClassifier(random_state=42)
+# rf_model.fit(X_train, y_train)
+
+
+# def homes(request):
+#     return render(request, 'ml_predictor/indexes.html')
+
+# def predict(request):
+#     if request.method == 'POST':
+#         # Get form data
+#         bmdstats = float(request.POST.get('bmdstats'))
+#         riagendr = float(request.POST.get('riagendr'))
+#         ridageyr = float(request.POST.get('ridageyr'))
+#         bmxwt = float(request.POST.get('bmxwt'))
+#         bhxht = float(request.POST.get('bhxht'))
+#         bmxleg = float(request.POST.get('bmxleg'))
+#         boxarml = float(request.POST.get('boxarml'))
+#         bmxarmc = float(request.POST.get('bmxarmc'))
+#         bmxwaist = float(request.POST.get('bmxwaist'))
+#         bmxhip = float(request.POST.get('bmxhip'))
+
+#         features = [bmdstats, riagendr, ridageyr, bmxwt, bhxht, bmxleg, boxarml, bmxarmc, bmxwaist, bmxhip]
+
+#         # Make prediction using the trained model
+#         prediction = rf_model.predict([features])[0]
+
+#         bmi = calculate_bmi(bmxwt, bhxht)
+
+#         weight_status = calculate_weight_status(bmi, ridageyr, riagendr)
+
+#         # Calculate z-score (assuming parameters for z-score calculation)
+#         z_score = calculate_z_score(bmdstats, mean=50, std_dev=5)
+
+#         # Calculate weight gain rate (assuming parameters for weight gain rate calculation)
+#         weight_initial = 10  # Initial weight measurement (e.g., at birth)
+#         weight_final = bmxwt  # Final weight measurement
+#         time_period = 1  # Time period in months
+#         weight_gain_rate = calculate_weight_gain_rate(weight_initial, weight_final, time_period)
+
+
+#         # Render result template with prediction and other calculated values
+#         return render(request, 'ml_predictor/result.html', {'prediction': prediction, 'bmi': bmi,'weight_status': weight_status, 'z_score': z_score, 'weight_gain_rate': weight_gain_rate})
+
+#     else:
+#         return HttpResponse("Method not allowed")
 
 
 
